@@ -37,8 +37,9 @@ Status: design only, no code yet. Start with the build order in
 - Mac tools in Swift (Firebase Apple SDK, offline write queue, sign-in with
   the user's Google account). Windows tools in Go plus PowerShell/robocopy,
   using a service account key (no personal Google credentials on Windows).
-- Mac SSD: `.staging/` holds pristine originals locked with `chflags uchg`;
-  `Shoots/` holds APFS clones (`cp -c`) to edit. No plain-copy fallback:
+- Mac SSD: each shoot is one folder under `Shoots/`. A hidden `.originals/`
+  inside it holds pristine originals locked with `chflags uchg`; the card
+  folders beside it hold APFS clones (`cp -c`) to edit. No plain-copy fallback:
   ingest refuses non-APFS volumes.
 - ingest writes only to the local SSD. ssd-push copies to the primary disk
   in the background. Card structure (DCIM, PRIVATE/M4ROOT) is kept inside a

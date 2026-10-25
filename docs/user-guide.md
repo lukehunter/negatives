@@ -44,7 +44,7 @@ Set up the Windows machine first; the Mac relies on it.
 6. **Allow notifications** for card-watch when macOS asks, so you see card summaries.
 7. **Mount the primary share** and let ssd-push reconnect to it automatically.
 
-Don't create the `Shoots` or `.staging` folders yourself; the first ingest creates them.
+Don't create the `Shoots` folder or shoot folders yourself; the first ingest creates them.
 
 ## Everyday use
 
@@ -96,6 +96,6 @@ If a card won't fit, ingest copies nothing and tells you how much space you need
 | Archive check overdue | The Windows machine is on but its tasks aren't running. | Check the scheduled task and the watcher on Windows. |
 | Disk health warning | A disk's SMART counters got worse, or a sampled file no longer matches its hash. | Replace the disk soon. Repair the named file from the other disk or the online backup. |
 | Conflict reported | A file on the archive changed where it shouldn't, or a copy never matched. | Look at the named file and fix it by hand. |
-| Original changed (only with ssd-watch) | A file in `.staging` changed, which shouldn't happen. | If the card isn't formatted, ingest it again. |
+| Original changed (only with ssd-watch) | A locked original in a shoot's hidden `.originals` folder changed, which shouldn't happen. | If the card isn't formatted, ingest it again. |
 | SSD isn't APFS | The working SSD has the wrong format. | Reformat it as APFS once everything on it is archived. |
 | Not enough space | The card's new files don't fit on the SSD. | Run `ssd-evict` and try again. |

@@ -23,8 +23,8 @@ The design is built around one person's home setup: a Mac for editing and a Wind
 - Originals aren't intentionally modified, and editing apps leave raw and video files untouched. They do create new files in the shoot folder (metadata sidecars, panoramas, rendered videos, project files), and some write ratings and metadata directly into JPEG and DNG files.
 - The Mac is sometimes offline, for example while traveling, so ingest must work without a connection.
 - The Windows machine is usually on at home, hosts the primary and backup disks, and runs scheduled tasks. It isn't always on, but it must be on for new files to reach the archive; until then they simply stay Pending.
-- The SSD is much smaller than the archive, and space on it is freed only when you decide to, a whole shoot folder at a time. A single shoot always fits on the SSD.
-- The working SSD is formatted APFS, so working copies can be clones of the staging originals. ingest refuses to run on any other file system.
+- The SSD is much smaller than the archive, and space on it is freed only when you decide to, a whole shoot folder at a time. The assumption is that a single shoot always fits on the SSD.
+- The working SSD is formatted APFS, so working copies can be clones of the locked originals. ingest refuses to run on any other file system.
 - Cards sometimes sit unformatted for a while, or an old card turns up later.
 - The archive holds on the order of millions of files and tens of terabytes. Loading them into Firestore the first time goes beyond the free daily write quota, so that one-time load is paid; ongoing use fits the free tier.
 
@@ -76,7 +76,7 @@ flowchart TB
     watchc[card-watch<br/>mount trigger]
     check[card-check<br/>reports status]
     ingest[ingest<br/>copy + record]
-    ssd[(SSD<br/>.staging + Shoots)]
+    ssd[(SSD<br/>shoot folders)]
     push[ssd-push<br/>background copy]
     evict[ssd-evict<br/>guided cleanup]
     restore[ssd-restore<br/>bring a shoot back]
@@ -127,7 +127,7 @@ The catalog is one Firestore collection, `files`, with one document per unique f
 | `cards.<cardKey>` | Card ID, relative path on card, time seen | card-check, ingest (Mac) |
 | `primary.<pathKey>` | Archive-relative path, size, mtime, verified-at | archive-hasher (Windows) |
 | `backup.<pathKey>` | Archive-relative path, size, mtime, verified-at | archive-hasher (Windows) |
-| `ssd.<pathKey>` | Working and staging paths, size and mtime at ingest, copied-at, pushed-at | ingest, ssd-push, ssd-evict (Mac) |
+| `ssd.<pathKey>` | Working and .originals paths, size and mtime at ingest, copied-at, pushed-at | ingest, ssd-push, ssd-evict (Mac) |
 
 Other collections:
 
@@ -153,25 +153,24 @@ All writes are merges of facts, so no write needs a transaction. That's what let
 
 ## Folder layout
 
-Every card keeps its own folder structure (DCIM, PRIVATE/M4ROOT and so on) inside a per-card folder, so DCIM's 9999-file rollover and two cards with the same paths never collide. On the Mac, staging and working copies use the same relative paths. On the archive, each shoot folder holds its own Originals/ and Derived/ folders, and a small .negatives marker file tells the tools it's a negatives shoot.
+Every card keeps its own folder structure (DCIM, PRIVATE/M4ROOT and so on) inside a per-card folder, so DCIM's 9999-file rollover and two cards with the same paths never collide. On the Mac, everything for a shoot lives in its shoot folder: working copies at the card paths, and the locked pristine originals at the same paths inside a hidden .originals/ folder, so moving, freeing or restoring a shoot means one folder. On the archive, each shoot folder holds its own Originals/ and Derived/ folders, and a small .negatives marker file tells the tools it's a negatives shoot.
 
 **Mac SSD**
 
 ```text
 EditSSD/
-├── Shoots/                         working copies (APFS clones), editable
-│   └── 2026-10-18 Coast/
-│       ├── ILCE-7M4-01/            card structure kept as-is
-│       │   ├── DCIM/100MSDCF/DSC09998.ARW
-│       │   ├── DCIM/101MSDCF/DSC00001.ARW
-│       │   └── PRIVATE/M4ROOT/CLIP/C0001.MP4
-│       ├── ILCE-7M4-02/
-│       └── Exports/                derived work, anywhere in the shoot
-│           └── coast-pano.tif
-└── .staging/                       pristine originals, locked
-    └── 2026-10-18 Coast/
-        ├── ILCE-7M4-01/…           same tree as Shoots/
-        └── ILCE-7M4-02/…
+└── Shoots/
+    └── 2026-10-18 Coast/                 everything for one shoot
+        ├── .originals/                   pristine originals, locked, hidden
+        │   ├── ILCE-7M4-01/DCIM/100MSDCF/DSC09998.ARW
+        │   └── ILCE-7M4-02/…
+        ├── ILCE-7M4-01/                  working copies (APFS clones), editable
+        │   ├── DCIM/100MSDCF/DSC09998.ARW
+        │   ├── DCIM/101MSDCF/DSC00001.ARW
+        │   └── PRIVATE/M4ROOT/CLIP/C0001.MP4
+        ├── ILCE-7M4-02/
+        └── Exports/                      derived work, anywhere in the shoot
+            └── coast-pano.tif
 ```
 
 **Windows primary** (the backup disk mirrors it)
@@ -180,7 +179,7 @@ EditSSD/
 P:\
 ├── 2026-10-18 Coast\                    a negatives shoot
 │   ├── .negatives                       marker file
-│   ├── Originals\                       from .staging, never overwritten
+│   ├── Originals\                       from .originals, never overwritten
 │   │   └── ILCE-7M4-01\DCIM\100MSDCF\DSC09998.ARW
 │   └── Derived\                         changed or new files from Shoots/, replaceable
 │       ├── ILCE-7M4-01\DCIM\100MSDCF\DSC09999.JPG   rated JPEG, same position
@@ -278,9 +277,9 @@ Seven small Swift tools share one library. Each can run alone, and none depends 
 **ingest** (card to SSD)
 
 - Picks the shoot folder (latest capture date + optional description) and the card folder (camera model + counter). A card re-inserted before formatting, recognized by its volume UUID; if it has both old and new files, ingest asks whether to continue the previous shoot or start a new one.
-- Copies each new file from the card to `.staging/<shoot>/<card>/<path on card>`, keeping the card's structure and hashing as it reads. Files already ingested or archived are skipped.
-- Locks each staging copy with the user immutable flag (chflags uchg). No editing app ever opens staging.
-- Clones each staging copy into the same path under `Shoots/` with `cp -c`, with no plain-copy fallback: ingest checks the SSD is APFS before copying anything and stops if cloning isn't possible. Working copies are not locked, so apps can rate and write metadata freely.
+- Copies each new file from the card to `<shoot>/.originals/<card>/<path on card>`, keeping the card's structure and hashing as it reads. Files already ingested or archived are skipped.
+- Locks each copy in `.originals/` with the user immutable flag (chflags uchg). No editing app ever opens `.originals/`.
+- Clones each original into the same path in the shoot folder (`<shoot>/<card>/<path on card>`) with `cp -c`, with no plain-copy fallback: ingest checks the SSD is APFS before copying anything and stops if cloning isn't possible. Working copies are not locked, so apps can rate and write metadata freely.
 - Records `cards` and `ssd` facts, including each working copy's size and mtime right after cloning.
 - Writes only to the local SSD, never to the network.
 - Checks free space before copying. If the card's new files won't fit, it copies nothing. It reports how much space the card needs and suggests running ssd-evict. ingest never deletes anything, on the card or the SSD.
@@ -288,14 +287,15 @@ Seven small Swift tools share one library. Each can run alone, and none depends 
 **ssd-push** (SSD to primary over SMB, in the background)
 
 - Runs from launchd on a schedule and whenever the primary share is reachable; can also be run by hand.
-- **Originals:** copies each staging file to `<shoot>/Originals/<card>/<path on card>`, additive only: never deletes or overwrites. A different file already at the target path is reported as a conflict. The first push of a shoot also writes its `.negatives` marker.
-- Before pushing an original, re-hashes the staging copy against the card hash. A mismatch means corruption: it isn't pushed, it's reported, and the card stays Pending.
+- **Originals:** copies each file in `.originals/` to `<shoot>/Originals/<card>/<path on card>`, additive only: never deletes or overwrites. A different file already at the target path is reported as a conflict. The first push of a shoot also writes its `.negatives` marker.
+- Before pushing an original, re-hashes the `.originals/` copy against the card hash. A mismatch means corruption: it isn't pushed, it's reported, and the card stays Pending.
 - An original whose hash already has a verified primary entry, at any path, isn't pushed again, so re-copied files never create duplicates in the archive.
 - **Working copies:** if size and mtime match what ingest recorded, there's nothing to push. If they changed, it hashes the file; a hash still equal to the card hash also means nothing to push. A different hash makes it a derived file.
 - **Derived files** (changed working copies, plus new files such as panoramas, renders, .gyroflow files and XMP sidecars) go to the same path inside the shoot's `Derived/` folder once unchanged for an hour, replacing any previous version. Later changes are pushed the same way: each run compares the file with the version it last pushed, and one that changed and has settled for an hour replaces it. Caches, proxies and temp files are skipped via a configurable exclude list.
 - **Exclude list** (starting point; confirm with a test shoot):
   - Skip `Proxy/` folders. DaVinci Resolve puts proxies there when set to [proxy subfolders in media file locations](https://ymcinema.com/2022/11/18/creating-proxies-in-davinci-resolve-18-tips-tricks/), and the [Blackmagic Proxy Generator](https://jayaretv.com/edit/davinci-resolve-proxy-workflow-explained/) does by default. Also skip Resolve's cache, proxy and optimized-media working folders if they ever point inside `Shoots/`.
   - Skip Bridge's exported caches: `.BridgeCache`, `.BridgeCacheT` and `.BridgeSharedCache/` ([Adobe community](https://community.adobe.com/t5/bridge-discussions/does-adobe-bridge-remove-the-old-bridgecache-when-a-new-cache-location-is-specified-in-the/m-p/9734618)).
+  - Skip each shoot's `.originals/` folder: those files are pushed as originals, never as derived. Also confirm during the test shoot that editing apps don't import hidden folders.
   - Skip `.DS_Store`, `._*` files and `*.partial` temp files.
   - Keep `.BridgeSort`: it holds Bridge's manual sort order and stacks ([Adobe community](https://community.adobe.com/t5/bridge-discussions/location-for-information-about-stacks/td-p/8887142)), so it's real work.
   - Keep XMP sidecars, `.gyroflow` projects and stabilized renders, which Gyroflow writes [next to the video by default](https://docs.gyroflow.xyz/app/advanced-usage/render-queue).
@@ -307,8 +307,8 @@ Seven small Swift tools share one library. Each can run alone, and none depends 
 
 **ssd-watch** (optional alerts)
 
-- Optional: build it only if you want an extra alarm. ssd-push and ssd-evict already re-hash staging copies before relying on them.
-- A launchd agent that subscribes to FSEvents on `.staging/` only. Staging copies are locked and never opened by apps, so any change there means corruption or a cleared lock.
+- Optional: build it only if you want an extra alarm. ssd-push and ssd-evict already re-hash `.originals/` copies before relying on them.
+- A launchd agent that subscribes to FSEvents on each shoot's `.originals/` folder only. Those copies are locked and never opened by apps, so any change there means corruption or a cleared lock.
 - Posts one macOS notification per shoot folder and records a modified flag on the file's `ssd` entry, so card-check and ssd-evict show it even if the notification is missed.
 - Changes to working copies in `Shoots/` are expected (ratings, metadata) and become derived files through ssd-push, not alerts.
 
@@ -316,10 +316,10 @@ Seven small Swift tools share one library. Each can run alone, and none depends 
 
 - Never runs on its own. Nothing is freed unless you start it and confirm.
 - Lists the SSD grouped by shoot folder, with each group's size, status (Safe or Pending), and the space it would free.
-- Works on whole shoot folders only: removing a shoot removes both its Shoots/ and .staging/ trees. A shoot can be removed only when every original in it is Safe, and every working or derived file is either unchanged from a Safe original or Safe under Derived/.
+- Works on whole shoot folders only: removing a shoot removes its one shoot folder, including `.originals/`. A shoot can be removed only when every original in it is Safe, and every working or derived file is either unchanged from a Safe original or Safe under Derived/.
 - You choose what to remove. Only groups where every file is Safe can be selected; Pending groups are shown, with the reason they can't be selected yet.
 - Before deleting, it re-checks every selected file online: it re-hashes the file and confirms that hash has verified primary and backup entries in a fresh catalog. A working copy changed since its version was archived is skipped and listed.
-- Clears the lock (chflags nouchg) on each confirmed staging copy right before deleting it.
+- Clears the lock (chflags nouchg) on each confirmed file in `.originals/` right before deleting it.
 - Shows a final summary (files, size, space freed) and asks for confirmation, then deletes and removes the `ssd` facts.
 - Offline or with a stale catalog, it lists only and deletes nothing.
 - Takes a local lock so two runs can't overlap.
@@ -329,8 +329,8 @@ Seven small Swift tools share one library. Each can run alone, and none depends 
 
 - Run by hand when you want to edit an archived shoot again: `ssd-restore <shoot>`, or pick from a list. Needs a connection and the primary share.
 - Checks free space first and copies nothing if the shoot won't fit.
-- **New-layout shoots:** copies the originals from `<shoot>/Originals` into `.staging/` (locked) and clones them into `Shoots/<shoot>`, then lays the latest files from `<shoot>/Derived` on top at the same paths. A rated JPEG comes back rated, a panorama comes back in `Exports/`.
-- **Legacy shoots:** the whole folder is treated as originals: copied into `.staging/<shoot>` and cloned into `Shoots/<shoot>`. Later edits are pushed to a `Derived/` folder inside the legacy shoot, with a `.negatives` marker. That's the only thing negatives ever adds to an old folder; the rest of it is never changed.
+- **New-layout shoots:** copies the originals from `<shoot>/Originals` into `Shoots/<shoot>/.originals/` (locked) and clones them into the shoot folder, then lays the latest files from `<shoot>/Derived` on top at the same paths. A rated JPEG comes back rated, a panorama comes back in `Exports/`.
+- **Legacy shoots:** the whole folder is treated as originals: copied into `Shoots/<shoot>/.originals/` and cloned into the shoot folder. Later edits are pushed to a `Derived/` folder inside the legacy shoot, with a `.negatives` marker. That's the only thing negatives ever adds to an old folder; the rest of it is never changed.
 - Hashes every file as it lands on the SSD and compares it with the catalog's verified hash, so a bad read over SMB is caught. A mismatch is retried and then reported.
 - Records `ssd` facts like ingest does. Restored files are already Safe, so ssd-push sends nothing until you change something, and ssd-evict can free the shoot again at any time.
 
@@ -367,13 +367,13 @@ A card that was ingested before but never formatted, then used again, is handled
 1. card-watch sees the card mount and runs card-check, which hashes every file and looks each hash up in the catalog.
 2. Each file lands in one of three groups: **Safe** (archived and verified on both disks), **Pending** (ingested earlier but not yet verified, for example because the Windows machine was off) or **Not copied** (new since the last ingest). The notification shows the counts and says the card isn't safe to format.
 3. You click Ingest. ingest finds the card's volume UUID in `cardSessions`, confirms it by checking a few recorded files, and, because the card has both old and new files, asks whether to continue in the same shoot and card folder (an incomplete copy) or start a new shoot with its own folders. The prompt shows the new files' count and capture dates, plus a Preview button that opens the first new file in Quick Look.
-4. Only the Not copied files are copied, to staging and as clones in `Shoots/`. Safe and Pending files are skipped by hash, even if their shoot folder was already removed from the SSD. That's safe because the live catalog already records each of their hashes: a Safe file has verified copies on both archive disks, and a Pending file still has its locked staging copy on the SSD (ssd-evict never removes a shoot until it's Safe) on its way to the archive. Copying either again would only make a duplicate.
+4. Only the Not copied files are copied, to `.originals/` and as clones in the shoot folder. Safe and Pending files are skipped by hash, even if their shoot folder was already removed from the SSD. That's safe because the live catalog already records each of their hashes: a Safe file has verified copies on both archive disks, and a Pending file still has its locked copy in `.originals/` on the SSD (ssd-evict never removes a shoot until it's Safe) on its way to the archive. Copying either again would only make a duplicate.
 5. ssd-push sends the new originals to the primary disk; archive-sync and archive-hasher copy and verify them. The next time the card is inserted, the notification says it's safe to format.
 
 **Offline (Firestore unreachable)**
 
 1. card-check still hashes every file, but can only look hashes up in the local Firestore cache. Files this Mac ingested or checked recently are recognized; older ones may not be in the cache, so they show as "not known offline" rather than Not copied. It never says the card is safe to format.
-2. ingest looks up the card's session in the cache. If found and confirmed, it asks the same continue-or-new question, and if you continue, any file already present in that folder's staging tree with the same path and size is skipped, so files from the earlier session aren't copied again.
+2. ingest looks up the card's session in the cache. If found and confirmed, it asks the same continue-or-new question, and if you continue, any file already present in that shoot's `.originals/` folder with the same path and size is skipped, so files from the earlier session aren't copied again.
 3. If the session isn't in the cache, ingest starts a new card folder, and old files not on the SSD are copied again. That's safe but uses extra space.
 4. Sightings and new `ssd` facts queue locally and sync when the Mac is back online. Then ssd-push finds that re-copied old files already exist on primary with the same hash, so it pushes nothing for them, and ssd-evict can later remove the duplicate folder once it's Safe.
 
@@ -395,7 +395,7 @@ Existing folders stay where they are. Every shoot folder without a .negatives ma
 1. **Confirm the SSD is APFS** with `diskutil info`. If it isn't, wait until everything on it is verified on the primary disk, copy it off, reformat as APFS, and copy it back.
 2. **Move existing working folders into `Legacy/`** at the SSD root. The tools ignore them until you run `ssd-evict --legacy`, which removes a folder only once every file in it is Safe in the archive. Files you changed since archiving show as Pending.
 3. **Keep any Lightroom catalog outside `Shoots/`**, so its previews never get pushed as derived files.
-4. **Don't create `Shoots/` or `.staging/` yourself.** ingest creates them on the first card.
+4. **Don't create `Shoots/` or any shoot folder yourself.** ingest creates them on the first card.
 
 ## Extra tools
 

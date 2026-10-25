@@ -25,14 +25,15 @@ Behind the scenes, negatives keeps an online catalog of every file, identified b
 Set up the Windows machine first; the Mac relies on it.
 
 1. **Install** the negatives Windows tools (archive-sync, archive-hasher, archive-scrub and the watcher) and smartmontools.
-2. **Create a service account key** in your Google Cloud project with only Firestore access. Save the key file somewhere only the account that runs the task can read it. Don't sign in with your own Google account on this machine.
-3. **Pack old Lightroom catalogs** (optional, but recommended): run `lrcat-pack <archive folder>` to see what it finds, then `--apply` to pack them. See Other tasks.
-4. **Configure your disks** in the negatives config file: the primary and backup disk roots. Leave your existing folders where they are; just check that none of your old shoot folders already contains a folder named Originals or Derived.
-5. **Check the disks match:** run `archive-sync --report` and fix any differences it lists by hand.
-6. **Nothing else to create.** Each new shoot gets its own folder at the root of the disk, with `Originals` and `Derived` inside it, the first time it's backed up.
-7. **Run the first full hash** by hand: `archive-hasher --full`. It takes days for a large archive, and you can stop and resume it.
-8. **Turn on automation:** `negatives install-task` creates the scheduled task, the startup run, the nightly run and the watcher.
-9. **Set disks to spin down:** in Power Options, set "Turn off hard disk after" to a few minutes.
+2. **Set up catalog backups** in your Google Cloud project: a Cloud Storage bucket and a weekly export job (see `docs/tools/catalog-backup.md` for the exact setup).
+3. **Create a service account key** in your Google Cloud project with only Firestore access. Save the key file somewhere only the account that runs the task can read it. Don't sign in with your own Google account on this machine.
+4. **Pack old Lightroom catalogs** (optional, but recommended): run `lrcat-pack <archive folder>` to see what it finds, then `--apply` to pack them. See Other tasks.
+5. **Configure your disks** in the negatives config file: the primary and backup disk roots. Leave your existing folders where they are; just check that none of your old shoot folders already contains a folder named Originals or Derived.
+6. **Check the disks match:** run `archive-sync --report` and fix any differences it lists by hand.
+7. **Nothing else to create.** Each new shoot gets its own folder at the root of the disk, with `Originals` and `Derived` inside it, the first time it's backed up.
+8. **Run the first full hash** by hand: `archive-hasher --full`. It takes days for a large archive, and you can stop and resume it.
+9. **Turn on automation:** `negatives install-task` creates the scheduled task, the startup run, the nightly run and the watcher.
+10. **Set disks to spin down:** in Power Options, set "Turn off hard disk after" to a few minutes.
 
 ## Installing on the Mac
 
@@ -100,5 +101,6 @@ If a card won't fit, ingest copies nothing and tells you how much space you need
 | Conflict reported | A file on the archive changed where it shouldn't, or a copy never matched. | Look at the named file and fix it by hand. |
 | Original changed (only with ssd-watch) | A locked original in a shoot's hidden `.originals` folder changed, which shouldn't happen. | If the card isn't formatted, ingest it again. |
 | SSD isn't APFS | The working SSD has the wrong format. | Reformat it as APFS once everything on it is archived. |
+| Catalog backup overdue | The weekly catalog export hasn't succeeded for about two weeks. | Check the export job in the Google Cloud console. Your photos are unaffected. |
 | Not enough space | The card's new files don't fit on the SSD. | Run `ssd-evict` and try again. |
 | Paths differ from archive | A folder in a shoot was moved or renamed on the SSD. | Nothing is lost. Move or rename it back to keep the paths matching; otherwise the archive keeps the old names. |

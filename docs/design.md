@@ -149,6 +149,7 @@ Other collections:
 
 - `status/archive-hasher`: last run start, last success, files published. It also holds the watcher's heartbeat. The Mac warns when the heartbeat is older than a few hours or the last full run is older than about a day and a half.
 - `conflicts`: a path whose content changed on primary, or a backup file whose hash never matches. Written by Windows, resolved by hand.
+- `status/catalog-backup`: when the last weekly export started, finished and whether it succeeded. Written by the catalog-backup function.
 - `cardSessions`: one document per card session (volume UUID, shoot folder, card folder, camera model, first ingest, plus a few file paths and sizes for confirmation). Written by ingest.
 
 **Keys and paths**
@@ -264,6 +265,12 @@ Each tool has its own spec in [`docs/tools/`](tools/). All of them share the [da
 | [archive-scrub](tools/archive-scrub.md) | Nightly sampled re-hashing and SMART checks |
 | [Credentials and scheduling](tools/windows-scheduling.md) | Service account, write-triggered and nightly runs, manual trigger |
 
+**Cloud**
+
+| Tool | Role |
+| --- | --- |
+| [catalog-backup](tools/catalog-backup.md) | Weekly Firestore export to Cloud Storage, and how to restore from it |
+
 **Manual utility**
 
 | Tool | Role |
@@ -294,6 +301,7 @@ Every failure below leaves a file in Pending, never in Safe.
 | Same file on two cards | Same hash, two card sightings | One document; both cards show it as copied |
 | Service account key leaked | Full Firestore read/write | Isolated project; rotate the key. Disks are unaffected |
 | File disappears from an archive disk | Its facts stay but are marked missing, so it's no longer Safe | Alert naming the files; restore from the other disk or the online backup |
+| Catalog lost or corrupted | Safety checks have nothing to read | Import the latest weekly export, then reconcile the archive and the Mac (see [catalog-backup](tools/catalog-backup.md)) |
 
 ## Walkthrough: a card with old and new files
 

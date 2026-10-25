@@ -11,6 +11,9 @@ Status: design only, no code yet. Start with the build order in
 
 - `docs/design.md`: the core design (source of truth for decisions): data
   model, folder layout, safety rules, build order.
+- `docs/schema.md`: field-level catalog schema, path rules and who may write
+  what; the contract between the Swift and Go code. Rules are in
+  `firestore/firestore.rules`.
 - `docs/tools/*.md`: one spec per tool. Read the relevant one, plus the core
   design, before working on a tool.
 - `docs/user-guide.md`: how the finished tools are installed and used.

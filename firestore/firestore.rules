@@ -1,0 +1,118 @@
+rules_version = '2';
+
+// negatives catalog security rules. See docs/schema.md.
+// The Windows tools use a service account and bypass these rules;
+// these rules govern the Mac tools, signed in with Firebase Auth.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Replace with the owner's Firebase Auth UID before deploying.
+    function isOwner() {
+      return request.auth != null && request.auth.uid == 'OWNER_UID';
+    }
+
+    function data() { return request.resource.data; }
+
+    function changed() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    function validPath(p) {
+      return p is string
+        && p.size() > 0 && p.size() <= 1024
+        && !p.matches('^/.*') && !p.matches('.*/$')
+        && !p.matches('(^|.*/)\\.{1,2}(/.*|$)')
+        && !p.matches('.*//.*')
+        && !p.matches('.*[:*?"<>|].*');
+    }
+
+    function validMacCopy(d) {
+      return d.schema == 1
+        && d.loc in ['card', 'ssd']
+        && validPath(d.path)
+        && d.size is int && d.size > 0
+        && d.mtimeNs is int
+        && d.seenAt is timestamp
+        && (d.loc == 'card'
+              ? d.keys().hasOnly(['schema', 'loc', 'path', 'size', 'mtimeNs', 'seenAt', 'card'])
+                && d.card.keys().hasOnly(['cardKey', 'sessionId'])
+                && d.card.cardKey is string && d.card.sessionId is string
+              : d.keys().hasOnly(['schema', 'loc', 'path', 'size', 'mtimeNs', 'seenAt', 'ssd'])
+                && d.ssd.keys().hasOnly(['originalsPath', 'workingPath', 'workingSize',
+                                         'workingMtimeNs', 'copiedAt', 'pushedAt', 'modified'])
+                && validPath(d.ssd.workingPath)
+                && (d.ssd.originalsPath == null || validPath(d.ssd.originalsPath)));
+    }
+
+    match /files/{md5} {
+      allow read: if isOwner();
+
+      // The Mac may create a summary with only schema and size.
+      allow create: if isOwner()
+        && md5.matches('^[0-9a-f]{32}$')
+        && data().keys().hasOnly(['schema', 'size'])
+        && data().schema == 1
+        && data().size is int && data().size > 0;
+
+      // The Mac may re-merge schema and size, but never change size.
+      allow update: if isOwner()
+        && changed().hasOnly(['schema', 'size'])
+        && data().schema == 1
+        && data().size == resource.data.size;
+
+      allow delete: if false;
+
+      match /paths/{pathKey} {
+        allow read: if isOwner();
+
+        allow create: if isOwner()
+          && pathKey.matches('^[0-9a-f]{16}$')
+          && validMacCopy(data());
+
+        allow update: if isOwner()
+          && resource.data.loc in ['card', 'ssd']
+          && validMacCopy(data())
+          && data().loc == resource.data.loc
+          && data().path == resource.data.path;
+
+        // ssd-evict removes SSD copies; nothing else is ever deleted by the Mac.
+        allow delete: if isOwner() && resource.data.loc == 'ssd';
+      }
+    }
+
+    match /cardSessions/{sessionId} {
+      allow read: if isOwner();
+      allow create, update: if isOwner()
+        && data().schema == 1
+        && data().keys().hasOnly(['schema', 'volumeUuid', 'shoot', 'cardFolder', 'cameraModel',
+                                  'cardLabel', 'capacityBytes', 'firstIngestAt', 'lastSeenAt',
+                                  'samples', 'stats'])
+        && data().volumeUuid is string
+        && validPath(data().shoot)
+        && validPath(data().cardFolder)
+        && data().samples is list && data().samples.size() <= 5;
+      allow delete: if false;
+    }
+
+    match /status/{name} {
+      allow read: if isOwner();
+      // The Mac may only request a sync; everything else here is written by Windows or the backup job.
+      allow create, update: if isOwner()
+        && name == 'sync-request'
+        && data().keys().hasOnly(['schema', 'requestedAt'])
+        && data().requestedAt is timestamp;
+      allow delete: if false;
+    }
+
+    match /conflicts/{id} {
+      allow read: if isOwner();
+      // The Mac may only mark a conflict resolved.
+      allow update: if isOwner()
+        && changed().hasOnly(['resolvedAt', 'resolution'])
+        && data().resolvedAt is timestamp
+        && data().resolution is string;
+      allow create, delete: if false;
+    }
+  }
+}

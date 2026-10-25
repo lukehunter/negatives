@@ -144,6 +144,8 @@ The catalog is one Firestore collection, `files`, with one summary document per 
 | `files/<md5>/paths/<pathKey>` (SSD copy) | Working and .originals paths, size and mtime at ingest, copied-at, pushed-at | ingest, ssd-push, ssd-evict (Mac) |
 | `files/<md5>/paths/<pathKey>` (archive copy) | Disk (primary or backup), archive-relative path, size, mtime, verified-at | archive-hasher (Windows) |
 
+The exact fields, path rules and keys are in [docs/schema.md](schema.md), and the security rules are in [firestore/firestore.rules](../firestore/firestore.rules).
+
 archive-hasher computes the summary fields from its own local state, which lists every copy on both disks, so it never needs to read-modify-write and no transaction is involved.
 
 **Zero-byte and common files**
@@ -356,7 +358,7 @@ Each step ships something usable on its own, and the read-only card check arrive
 
 1. **Spike: Firestore on macOS.** Sign in, write offline, quit, reconnect, confirm the write lands. This validates the riskiest assumption first. Also confirm the SSD is APFS so ingest can clone.
 2. **archive-sync.** Replaces any existing copy job; test interrupted copies with a large video. Run lrcat-pack before this step, so the first hash skips the catalog clutter.
-3. **Schema spec + archive-hasher.** Write the field and path-normalization spec, then the hasher. Run the first full hash by hand.
+3. **Schema spec + archive-hasher.** The spec is in [docs/schema.md](schema.md); test the security rules in the Firebase emulator, then write the hasher. Run the first full hash by hand.
 4. **CatalogKit + card-check.** Immediately answers "is this old card already archived?" for every card in the drawer.
 5. **ingest + ssd-push.** Card to SSD with sightings recorded, then ssd-push copies the SSD to primary in the background. ssd-watch is optional and can come last.
 6. **ssd-evict.** The guided review and listings first; deletion is added once the listings look right.

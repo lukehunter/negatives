@@ -55,7 +55,7 @@ backup = 'B:\'
 quarantine = 'B:\_quarantine'           # must be on the backup disk
 
 [gcp]
-project = "negatives-archive"
+project = "negatives-8c3e2"
 key = 'C:\ProgramData\negatives\service-account.json'
 
 [schedule]

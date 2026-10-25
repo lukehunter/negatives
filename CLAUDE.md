@@ -41,6 +41,20 @@ Status: design only, no code yet. Start with the build order in
 - Editing apps: Lightroom (rarely now), Adobe Bridge, DaVinci Resolve,
   Sony Catalyst, Gyroflow. Bridge writes ratings into JPEGs.
 
+## Cloud setup (done 2026-10-25)
+
+- GCP project `negatives-8c3e2` in the user's own organization, with Firebase
+  enabled and billing linked. Firestore: Standard edition, Native mode,
+  database `(default)`.
+- Firebase Auth: Google provider only. OAuth audience External, publishing
+  status Testing, with the user's Gmail as the only test user.
+- Apple app registered with bundle ID `net.lukehunter.negatives`. Its
+  `GoogleService-Info.plist` lives at
+  `~/Library/Application Support/negatives/GoogleService-Info.plist`, never
+  in the repo.
+- Still to do: replace `OWNER_UID` in `firestore/firestore.rules` after the
+  first sign-in and deploy the rules; turn off new sign-ups after that.
+
 ## Key decisions (details and reasons in docs/design.md)
 
 - Identity is the file's MD5. Catalog is Firestore: a summary doc per hash

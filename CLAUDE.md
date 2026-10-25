@@ -30,7 +30,7 @@ Status: design only, no code yet. Start with the build order in
 
 ## Setup this is for
 
-- Mac (Apple Silicon) for editing, with an APFS working SSD.
+- Mac (Apple Silicon) for editing; the working SSD is its internal 8 TB APFS disk.
 - Windows machine at home hosting the primary and backup archive disks
   (plain file copies, no RAID), shared to the Mac over SMB. Usually on,
   not always.
@@ -103,8 +103,8 @@ Status: design only, no code yet. Start with the build order in
 ## To verify early
 
 - Firestore offline writes on macOS: verified 2026-10-25 (findings in
-  `spikes/firestore-offline/README.md`). Still to do for step 1: confirm the
-  SSD is APFS.
+  `spikes/firestore-offline/README.md`). The working SSD is the Mac's
+  internal 8 TB disk, APFS (checked with `diskutil info`). Step 1 is done.
 - Card volume UUID behavior on real cards: stable across re-inserts and card
   readers, new after a format (checklist in docs/testing.md, Manual checks).
 - How robocopy handles an interrupted copy with /XC /XN /XO.

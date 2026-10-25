@@ -352,7 +352,7 @@ Existing folders stay where they are. Every shoot folder without a .negatives ma
 1. **Confirm the SSD is APFS** with `diskutil info`. If it isn't, wait until everything on it is verified on the primary disk, copy it off, reformat as APFS, and copy it back.
 2. **Keep existing working folders in `Shoots/`**, named exactly as on the archive. They're legacy shoots: ssd-push archives anything missing or changed, and ssd-evict removes one once every file in it is Safe. Files you changed show as Pending until their Derived copy is verified.
 3. **Keep any Lightroom catalog outside `Shoots/`**, so its previews never get pushed as derived files.
-4. **Don't create `Shoots/` or any shoot folder yourself.** ingest creates them on the first card.
+4. **Run `negatives config init`,** which creates `Shoots/` if needed. Don't create new shoot folders yourself; ingest creates them.
 
 ## Build order
 

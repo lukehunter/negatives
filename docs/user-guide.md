@@ -45,7 +45,7 @@ Set up the Windows machine first; the Mac relies on it.
 6. **Keep Lightroom catalogs out of `Shoots`** if you still use Lightroom.
 7. **Allow notifications** for card-watch when macOS asks, so you see card summaries.
 
-Don't create the `Shoots` folder or shoot folders yourself; the first ingest creates them.
+`negatives config init` creates the `Shoots` folder if needed. Don't create new shoot folders yourself; ingest creates them.
 
 ## Everyday use
 

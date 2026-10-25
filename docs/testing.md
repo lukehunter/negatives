@@ -14,7 +14,12 @@ How negatives is tested. Part of [negatives](design.md). The tools decide when i
 
 ## What must never break
 
-These invariants get tests at every layer, and property-based tests where practical (random sequences of ingest, push, evict, rename, offline and failure steps, checked after every step):
+These invariants get tests at every layer, and property-based tests: the framework generates thousands of random cases, checks the invariant after every step, and shrinks any failure to the shortest case that still breaks it.
+
+- **From the start:** the core decisions are written as pure functions that take catalog facts and file state as input: is a file Safe, may a shoot be evicted, should a file be pushed and where, is a card safe to format. These are property-tested from day one.
+- **Later:** once the tools work end to end, random sequences of real operations (ingest, rate a file, push, interrupt, go offline, rename, evict, restore) run against fake disks, a fake clock and the emulator, with the invariants checked after every step.
+
+The invariants:
 
 1. A card is never reported safe to format unless every non-empty file on it has a verified copy on both disks.
 2. Nothing in `.originals/` is ever modified, and nothing in a shoot's `Originals/` on the archive is ever overwritten or deleted.

@@ -78,6 +78,8 @@ Status: design only, no code yet. Start with the build order in
 - Safety over convenience: nothing deletes automatically, and any doubt
   means "not safe yet".
 - Explain anything that could delete or overwrite data, and how it's kept safe.
+- Write core decisions (Safe, evict, push, safe to format) as pure functions
+  so they can be property-tested from day one.
 
 ## To verify early
 

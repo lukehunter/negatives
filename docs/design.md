@@ -40,6 +40,7 @@ The design is built around one person's home setup: a Mac for editing and a Wind
 - The Windows machine is usually on at home, hosts the primary and backup disks, and runs scheduled tasks. It isn't always on, but it must be on for new files to reach the archive; until then they simply stay Pending.
 - The SSD is much smaller than the archive, and space on it is freed only when you decide to, a whole shoot folder at a time. The assumption is that a single shoot always fits on the SSD.
 - The working SSD is formatted APFS, so working copies can be clones of the locked originals. ingest refuses to run on any other file system.
+- Shoot folder names and paths are the same on the SSD and on the archive.
 - Cards sometimes sit unformatted for a while, or an old card turns up later.
 - The archive holds on the order of millions of files and tens of terabytes. Loading them into Firestore the first time goes beyond the free daily write quota, so that one-time load is paid; ongoing use fits the free tier.
 
@@ -203,6 +204,14 @@ P:\
 └── 2019-05-04 Beach\                    a legacy shoot, left as it was
 ```
 
+**Legacy shoot folders**
+
+Shoot folders from before negatives sit alongside new ones, on the SSD and on the archive, with the same names and paths in both places. The tools tell them apart one folder at a time:
+
+- On the SSD, a shoot folder with a `.originals/` folder is new-style; one without it is legacy. On the archive, the `.negatives` marker plays the same role.
+- A folder the catalog knows as new-style but that has lost its `.originals/` is flagged, never silently treated as legacy.
+- Legacy shoots are still archived and cataloged: ssd-push copies them to the same paths on the archive (see [ssd-push](tools/ssd-push.md)), and ssd-evict checks them by hash.
+
 **Naming**
 
 - **Shoot folder:** the latest capture date on the card, plus an optional description you type at ingest (`2026-10-18 Coast`).
@@ -310,7 +319,7 @@ Existing folders stay where they are. Every shoot folder without a .negatives ma
 **Mac**
 
 1. **Confirm the SSD is APFS** with `diskutil info`. If it isn't, wait until everything on it is verified on the primary disk, copy it off, reformat as APFS, and copy it back.
-2. **Move existing working folders into `Legacy/`** at the SSD root. The tools ignore them until you run `ssd-evict --legacy`, which removes a folder only once every file in it is Safe in the archive. Files you changed since archiving show as Pending.
+2. **Keep existing working folders in `Shoots/`**, named exactly as on the archive. They're legacy shoots: ssd-push archives anything missing or changed, and ssd-evict removes one once every file in it is Safe. Files you changed show as Pending until their Derived copy is verified.
 3. **Keep any Lightroom catalog outside `Shoots/`**, so its previews never get pushed as derived files.
 4. **Don't create `Shoots/` or any shoot folder yourself.** ingest creates them on the first card.
 

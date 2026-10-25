@@ -11,4 +11,4 @@ Guided cleanup, only when you run it. Part of [negatives](../design.md). Shared 
 - Shows a final summary (files, size, space freed) and asks for confirmation, then deletes and removes the `ssd` facts.
 - Offline or with a stale catalog, it lists only and deletes nothing.
 - Takes a local lock so two runs can't overlap.
-- **Legacy folders:** with `--legacy`, it reviews working folders from before negatives (kept in `Legacy/` on the SSD) by hash alone. A folder can be removed once every file in it is Safe somewhere in the archive.
+- **Legacy shoot folders:** a folder without `.originals/` is checked by hash alone and listed alongside new-style shoots. It can be removed once every file in it is Safe somewhere in the archive.

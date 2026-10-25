@@ -39,7 +39,7 @@ Set up the Windows machine first; the Mac relies on it.
 1. **Install** the negatives Mac tools: the card-watch app and the command-line tools (card-check, ingest, ssd-push, ssd-evict).
 2. **Sign in** with your Google account when card-watch first starts. The sign-in is kept in your Keychain.
 3. **Choose your working SSD.** negatives checks that it's APFS and refuses anything else.
-4. **Move existing working folders** on the SSD into a folder named `Legacy` at its root. negatives leaves them alone until you clean them up with `ssd-evict --legacy`.
+4. **Put existing working folders in `Shoots`** on the SSD, with the same names they have on the archive. negatives backs up anything missing or changed and lets you free them like any other shoot.
 5. **Keep Lightroom catalogs out of `Shoots`** if you still use Lightroom.
 6. **Allow notifications** for card-watch when macOS asks, so you see card summaries.
 7. **Mount the primary share** and let ssd-push reconnect to it automatically.
@@ -70,7 +70,7 @@ negatives never frees space on its own. When you need room:
 2. Choose shoots to remove. Only shoots where everything is Safe can be chosen; the others show why they aren't ready yet.
 3. Review the summary and confirm. It re-checks every file against the archive right before deleting, and skips anything that changed.
 
-It works on whole shoot folders and needs a connection. Use `ssd-evict --legacy` to clean up folders in `Legacy` from before negatives.
+It works on whole shoot folders, including ones from before negatives, and needs a connection.
 
 If a card won't fit, ingest copies nothing and tells you how much space you need; free some with `ssd-evict` and try again.
 

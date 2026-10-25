@@ -50,7 +50,9 @@ Status: design only, no code yet. Start with the build order in
   `<latest capture date> <optional description>`.
 - Archive: each shoot folder at the disk root holds `Originals/` (never
   overwritten) and `Derived/` (replaceable), plus a `.negatives` marker.
-  Unmarked folders are legacy and are left as they are.
+  Unmarked folders are legacy: never moved or overwritten. On the SSD, legacy
+  shoot folders (no `.originals/`) sit beside new ones; ssd-push archives them
+  by path, which today matches between the SSD and the archive.
 - Windows runs are triggered by writes (watcher, 10 quiet minutes), plus a
   nightly safety-net run. Avoid spinning disks unnecessarily.
 - Nothing frees SSD space automatically: ssd-evict is user-run, works on

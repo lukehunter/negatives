@@ -7,4 +7,4 @@ Go, single binary. Part of [negatives](../design.md). Shared concepts live in th
 - Saves progress after each batch, so an interrupted run resumes instead of starting over.
 - Reports conflicts (same path, new content) under Originals/ to `conflicts` and updates `status/archive-hasher` at the end of every run. Under Derived/, a changed file is a normal replacement: its fact moves from the old hash to the new one.
 - Needs no offline queue: the disks are the source of truth, so a failed publish simply happens again next run.
-- Hashes legacy roots like any other root, so card-check recognizes old cards whose files were archived before negatives existed. A file that disappears from a root (for example after lrcat-pack) has its fact removed.
+- Hashes legacy roots like any other root, so card-check recognizes old cards whose files were archived before negatives existed. Files never disappear from the archive in normal operation, so a file that does is never silently dropped: its facts are kept but marked missing (so it's no longer Safe on that disk), and it's reported as an alert naming the files.

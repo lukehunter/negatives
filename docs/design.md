@@ -293,6 +293,7 @@ Every failure below leaves a file in Pending, never in Safe.
 | Original edited in place on primary | Same path, new content | Reported to `conflicts`; backup keeps the original |
 | Same file on two cards | Same hash, two card sightings | One document; both cards show it as copied |
 | Service account key leaked | Full Firestore read/write | Isolated project; rotate the key. Disks are unaffected |
+| File disappears from an archive disk | Its facts stay but are marked missing, so it's no longer Safe | Alert naming the files; restore from the other disk or the online backup |
 
 ## Walkthrough: a card with old and new files
 

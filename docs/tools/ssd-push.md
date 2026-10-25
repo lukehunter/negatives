@@ -22,3 +22,4 @@ SSD to primary over SMB, in the background. Part of [negatives](../design.md). S
 - Writes each file under a temporary `.partial` name and renames it when complete, so archive-hasher never hashes a half-written file.
 - Records `pushedAt` on the file's `ssd` entry, so card-check can show "pushed, awaiting verification".
 - Share unavailable or offline: does nothing and retries next run.
+- Takes each shoot's lock while working on it. A shoot locked by another tool (for example ssd-evict or ingest) is skipped and retried on the next run.

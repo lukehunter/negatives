@@ -10,6 +10,6 @@ Guided cleanup, only when you run it. Part of [negatives](../design.md). Shared 
 - Clears the lock (chflags nouchg) on each confirmed file in `.originals/` right before deleting it.
 - Shows a final summary (files, size, space freed) and asks for confirmation, then deletes and removes the `ssd` facts.
 - Offline or with a stale catalog, it lists only and deletes nothing.
-- Takes a local lock so two runs can't overlap.
+- Holds each shoot's lock from the final re-check through the deletion, so ssd-push can't be copying from a shoot while it's being removed. A shoot that's locked by another tool is shown as busy and skipped.
 - **Legacy shoot folders:** a folder without `.originals/` is checked by hash alone and listed alongside new-style shoots. It can be removed once every file in it is Safe somewhere in the archive.
 - A shoot whose paths no longer match the archive (a folder was moved or renamed) is marked "paths differ from archive". It can still be removed once everything is Safe by hash; restoring it later brings back the archive's paths.

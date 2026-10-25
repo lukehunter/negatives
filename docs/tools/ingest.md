@@ -15,3 +15,4 @@ Card to SSD. Part of [negatives](../design.md). Shared concepts live in the desi
 - Records `cards` and `ssd` facts, including each working copy's size and mtime right after cloning.
 - Writes only to the local SSD, never to the network.
 - Checks free space before copying. If the card's new files won't fit, it copies nothing. It reports how much space the card needs and suggests running ssd-evict. ingest never deletes anything except its own unfinished temporary files: never anything on the card, existing originals, or your work.
+- Holds the shoot's lock while copying into it, so ssd-push never pushes from a shoot mid-ingest.

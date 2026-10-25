@@ -65,7 +65,7 @@ Common fields:
 
 Extra fields by `loc`:
 
-- `card`: `card: { cardKey: string, sessionId: string }`.
+- `card`: `card: { cardKey: string, sessionId: string }`. card-check finds a session's cached hashes with a collection-group query on `paths` where `card.sessionId` equals the session; enable the single-field index for that collection group.
 - `ssd`: `ssd: { originalsPath: string, workingPath: string, workingSize: int, workingMtimeNs: int, copiedAt: timestamp, pushedAt: timestamp|null, modified: bool }`. `path` equals `originalsPath` for new-style shoots and `workingPath` for legacy ones.
 - `primary` and `backup`: `verifiedAt: timestamp`, `missingSince: timestamp|null`. A copy that disappears gets `missingSince` and stops counting toward `copies`.
 

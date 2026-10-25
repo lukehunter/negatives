@@ -35,8 +35,9 @@ Status: design only, no code yet. Start with the build order in
 
 ## Key decisions (details and reasons in docs/design.md)
 
-- Identity is the file's MD5. Catalog is Firestore: one doc per hash,
-  append-only facts written with set-with-merge, no transactions.
+- Identity is the file's MD5. Catalog is Firestore: a summary doc per hash
+  plus a `paths` subcollection doc per copy; append-only facts written with
+  set-with-merge, no transactions. Zero-byte files are never cataloged.
 - Mac tools in Swift (Firebase Apple SDK, offline write queue, sign-in with
   the user's Google account). Windows tools in Go plus PowerShell/robocopy,
   using a service account key (no personal Google credentials on Windows).

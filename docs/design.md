@@ -135,15 +135,22 @@ The Mac never decides a file is Safe on its own. It reads that from facts the Wi
 
 ## Data model
 
-The catalog is one Firestore collection, `files`, with one document per unique file content, keyed by its MD5 (lowercase hex). Each component owns specific fields and writes them with set-with-merge, so concurrent writers never overwrite each other and replayed writes are harmless.
+The catalog is one Firestore collection, `files`, with one summary document per unique file content, keyed by its MD5 (lowercase hex), and one small document per copy in its `paths` subcollection. Each component owns specific documents and fields and writes them with set-with-merge, so concurrent writers never overwrite each other and replayed writes are harmless.
 
-| Field | Contents | Written by |
+| Document | Contents | Written by |
 | --- | --- | --- |
-| `size` | Bytes | First writer (identical for all) |
-| `cards.<cardKey>` | Card ID, relative path on card, time seen | card-check, ingest (Mac) |
-| `primary.<pathKey>` | Archive-relative path, size, mtime, verified-at | archive-hasher (Windows) |
-| `backup.<pathKey>` | Archive-relative path, size, mtime, verified-at | archive-hasher (Windows) |
-| `ssd.<pathKey>` | Working and .originals paths, size and mtime at ingest, copied-at, pushed-at | ingest, ssd-push, ssd-evict (Mac) |
+| `files/<md5>` | `size`; for `primary` and `backup`, when a copy was first verified and how many verified copies that disk holds; `shoots`, the number of distinct shoots the content appears in; the `common` flag | archive-hasher (archive fields, `shoots`, `common`); first writer (`size`) |
+| `files/<md5>/paths/<pathKey>` (card copy) | Card ID, relative path on card, time seen | card-check, ingest (Mac) |
+| `files/<md5>/paths/<pathKey>` (SSD copy) | Working and .originals paths, size and mtime at ingest, copied-at, pushed-at | ingest, ssd-push, ssd-evict (Mac) |
+| `files/<md5>/paths/<pathKey>` (archive copy) | Disk (primary or backup), archive-relative path, size, mtime, verified-at | archive-hasher (Windows) |
+
+archive-hasher computes the summary fields from its own local state, which lists every copy on both disks, so it never needs to read-modify-write and no transaction is involved.
+
+**Zero-byte and common files**
+
+- **Zero-byte files are never cataloged** and never affect Safe. card-check lists them as ignored, ingest and ssd-push still copy them so card structures stay intact, and archive-hasher skips them.
+- **Common files:** content that turns up in many shoots (10 or more by default), typically camera index or settings files that are identical on every card, is marked `common` by archive-hasher. Safety needs nothing special: once any copy is verified, every later copy is Safe by hash. The flag only tidies reports: card-check and ssd-evict fold them into one line, such as "+14 common camera files, all Safe". They're still archived at every path so folder structures stay complete; at their size the duplication costs nothing.
+- **Why a subcollection:** one small document per copy keeps a heavily repeated file from hitting Firestore's 1 MiB document limit or its per-document write rate. It costs nothing extra, since Firestore bills per document read and write either way, and safety checks read only the summary document.
 
 Other collections:
 
@@ -154,7 +161,7 @@ Other collections:
 
 **Keys and paths**
 
-- `pathKey` is a short hash of the normalized path, because Firestore field names can't safely hold slashes. The full path lives in the value.
+- `pathKey` is a short hash of the copy's location (card, SSD, primary or backup) and normalized path, so each copy has a stable document ID. The full path lives in the document.
 - Paths are stored relative to the archive or SSD root, with `/` separators and Unicode NFC. macOS often produces NFD filenames, which otherwise won't match what Windows reports for the same file.
 - `cardKey` is the card's volume UUID. It stays the same until the card is formatted, so a re-inserted card is recognized and can continue its previous shoot. A format creates a new UUID, which counts as a new card.
 
@@ -162,9 +169,10 @@ Other collections:
 
 | State | Rule |
 | --- | --- |
-| Safe | A `primary` entry and a `backup` entry, both verified |
-| Pending | Seen on a card or SSD, but missing one or both verified archive entries |
+| Safe | The summary shows at least one verified copy on primary and one on backup |
+| Pending | Seen on a card or SSD, but missing a verified copy on primary or backup |
 | Not copied | No document for the hash |
+| Ignored | Zero-byte file; never cataloged |
 
 All writes are merges of facts, so no write needs a transaction. That's what lets the Mac queue writes offline.
 

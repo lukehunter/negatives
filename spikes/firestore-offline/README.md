@@ -173,4 +173,10 @@ From the run on 2026-10-25 (Firebase Apple SDK 13.1.1, macOS 26.6.2, clean quit 
   must never rely on the queue to report a rule violation: validate documents against the
   schema before writing, and re-read later to confirm that facts landed.
 
-Not run: the crash variant (Stop in Xcode instead of ⌘Q).
+Crash variant, same day: **PASS.** `spikes/1172bb46-3034-431a-9f94-e519c136a1af` was queued
+offline by pid 3115, which Xcode's Stop then killed 13 s later (the unified log shows
+debugserver sending `PT_KILL`, so no shutdown code ran). After relaunching with Wi-Fi on,
+the write was still pending in the cache, was acknowledged in 0.6 s, and matched on the
+server. The reject probe was again dropped silently. So once a cache read returns the
+document, the queued write survives the process being killed. Power loss is still untested
+(see `sync = false` above).

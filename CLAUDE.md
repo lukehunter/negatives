@@ -53,6 +53,9 @@ Status: design only, no code yet. Start with the build order in
   Unmarked folders are legacy: never moved or overwritten. On the SSD, legacy
   shoot folders (no `.originals/`) sit beside new ones; ssd-push archives them
   by path, which today matches between the SSD and the archive.
+- Existing folders in a shoot must never be moved or renamed (new folders are
+  fine). If they are, nothing is copied twice: the catalog keeps files Safe by
+  hash, and the user is notified that paths differ.
 - Windows runs are triggered by writes (watcher, 10 quiet minutes), plus a
   nightly safety-net run. Avoid spinning disks unnecessarily.
 - Nothing frees SSD space automatically: ssd-evict is user-run, works on

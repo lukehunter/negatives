@@ -212,6 +212,16 @@ Shoot folders from before negatives sit alongside new ones, on the SSD and on th
 - A folder the catalog knows as new-style but that has lost its `.originals/` is flagged, never silently treated as legacy.
 - Legacy shoots are still archived and cataloged: ssd-push copies them to the same paths on the archive (see [ssd-push](tools/ssd-push.md)), and ssd-evict checks them by hash.
 
+**Moving and renaming**
+
+Paths on the SSD and the archive are meant to stay identical. New folders can always be added to a shoot, legacy or new-style, but existing folders must never be moved or renamed, on either side.
+
+If one is moved or renamed anyway, the catalog keeps things safe rather than the paths:
+
+- Files whose content is already verified in the archive aren't copied again under the new path, so nothing is duplicated. They stay Safe by hash, so the shoot can still be removed from the SSD.
+- ssd-push posts a notification naming the shoot and the paths that now differ from the archive, and ssd-evict shows the shoot as "paths differ from archive".
+- Restoring the shoot later brings back the archive's paths, not the renamed ones.
+
 **Naming**
 
 - **Shoot folder:** the latest capture date on the card, plus an optional description you type at ingest (`2026-10-18 Coast`).

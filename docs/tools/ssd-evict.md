@@ -12,3 +12,4 @@ Guided cleanup, only when you run it. Part of [negatives](../design.md). Shared 
 - Offline or with a stale catalog, it lists only and deletes nothing.
 - Takes a local lock so two runs can't overlap.
 - **Legacy shoot folders:** a folder without `.originals/` is checked by hash alone and listed alongside new-style shoots. It can be removed once every file in it is Safe somewhere in the archive.
+- A shoot whose paths no longer match the archive (a folder was moved or renamed) is marked "paths differ from archive". It can still be removed once everything is Safe by hash; restoring it later brings back the archive's paths.

@@ -10,6 +10,8 @@ negatives tells you when a memory card is safe to format: every file on it has a
 
 You'll mostly interact with it through notifications: insert a card, read what it says, click Ingest if there's something to copy. Everything else runs on its own.
 
+Behind the scenes, negatives keeps an online catalog of every file, identified by its content rather than its name, along with where each verified copy lives. That's why it can tell you about any card, even one you copied years ago, and why your Mac and the Windows machine stay in agreement even when you ingest offline. Offload apps check a copy once, when it's made; negatives remembers every copy and keeps checking them.
+
 ## What you need
 
 - **A Mac** with a working SSD formatted as APFS. Check with `diskutil info /Volumes/YourSSD` and look for "APFS".

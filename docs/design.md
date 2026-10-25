@@ -107,6 +107,16 @@ flowchart TB
 
 The Mac never decides a file is Safe on its own. It reads that from facts the Windows host publishes after hashing both disks.
 
+**Why an online catalog.** Every copy of every file is recorded by content hash in one catalog that both machines can reach from anywhere. That answers questions a folder of files can't:
+
+- *Is this file already safe?* For any file on any card, however long ago and by whatever means it was copied, regardless of its name or path.
+- *Which cards can I format?* Even an old card found in a drawer, or one with a mix of copied and new files.
+- *What can I free from the SSD?* Decided from verified facts, not from remembering what was backed up.
+- The machines coordinate without talking to each other directly: the Mac records what it copied (offline too, syncing later), the archive host records what it verified, and each reads the other's facts.
+- The catalog lives outside both machines, so it survives losing either one, and it keeps history such as card sessions and per-card errors.
+
+**How this differs from existing tools.** Offload tools such as Hedge and ShotPut Pro verify a copy at the moment it's made, one session at a time. Photo importers typically spot duplicates by filename, date and size rather than content. Sync and backup tools (robocopy, rsync, online backup) copy and protect files but never check them against what came off the card. negatives keeps a lasting, content-addressed record of every verified copy, keeps re-verifying the archive over time, and answers the card-centric question none of them do: is it safe to format this card?
+
 ## Data model
 
 The catalog is one Firestore collection, `files`, with one document per unique file content, keyed by its MD5 (lowercase hex). Each component owns specific fields and writes them with set-with-merge, so concurrent writers never overwrite each other and replayed writes are harmless.

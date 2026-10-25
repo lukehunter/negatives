@@ -49,8 +49,10 @@ These invariants get tests at every layer, and property-based tests where practi
   - DCIM folders including a 9999 rollover (`100MSDCF` into `101MSDCF`), and the same names on two cards;
   - Sony-style `PRIVATE/M4ROOT` clips with their XML sidecars and index files;
   - zero-byte files, files duplicated across cards, and common files repeated on every card;
-  - small JPEGs and raws with EXIF `Model` and capture dates set by exiftool, including mixed camera models on one card;
+  - real sample files from each camera body in use (a JPEG, a raw and a short video clip with its sidecars), stored in `testdata/samples/<camera>/` with Git LFS, since raws and clips are large;
+  - small synthetic JPEGs with EXIF `Model` and capture dates set by exiftool, for edge cases such as mixed camera models on one card;
   - one large file (several GB) to exercise streaming and temporary files.
+- **Sample file privacy:** before committing samples, strip GPS and other personal metadata with exiftool, so the repo is safe to make public later.
 - **Fake working SSD:** an APFS disk image, so clones and `chflags uchg` behave as they do on the real SSD. An HFS+ or exFAT image checks that ingest refuses non-APFS volumes.
 - **Fake archive:** on the Mac, a local folder stands in for the primary share. On Windows, two virtual disks (VHDX) mounted as separate drive letters stand in for primary and backup.
 
@@ -90,6 +92,6 @@ Things that need real hardware or real apps, done once and then whenever somethi
 
 ## Continuous integration
 
-- GitHub Actions on every push: Go unit and integration tests on Linux and Windows runners, Swift tests on a macOS runner, and the rules tests with the Firestore emulator.
+- Decided: GitHub Actions from the start, on every push: Go unit and integration tests on Linux and Windows runners, Swift tests on a macOS runner, and the rules tests with the Firestore emulator.
 - Disk-image fixtures run on the macOS runner; Windows VHDX tests and robocopy checks run on the Windows runner.
 - Tests never touch the real Firebase project: they use the emulator only.

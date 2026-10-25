@@ -253,6 +253,8 @@ If one is moved or renamed anyway, the catalog keeps things safe rather than the
 
 Each tool has its own spec in [`docs/tools/`](tools/). All of them share the [data model](#data-model), [folder layout](#folder-layout) and [safety rules](#safety-rules-and-failure-modes) in this doc.
 
+Settings for all of them, on both machines, are described in [docs/config.md](config.md).
+
 **Mac** (Swift; each runs alone, and none depends on another having run first)
 
 | Tool | Role |

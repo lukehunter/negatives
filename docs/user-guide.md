@@ -28,7 +28,7 @@ Set up the Windows machine first; the Mac relies on it.
 2. **Set up catalog backups** in your Google Cloud project: a Cloud Storage bucket and a weekly export job (see `docs/tools/catalog-backup.md` for the exact setup).
 3. **Create a service account key** in your Google Cloud project with only Firestore access. Save the key file somewhere only the account that runs the task can read it. Don't sign in with your own Google account on this machine.
 4. **Pack old Lightroom catalogs** (optional, but recommended): run `lrcat-pack <archive folder>` to see what it finds, then `--apply` to pack them. See Other tasks.
-5. **Configure your disks** in the negatives config file: the primary and backup disk roots. Leave your existing folders where they are; just check that none of your old shoot folders already contains a folder named Originals or Derived.
+5. **Configure the Windows tools:** run `negatives config init`. It asks for your primary and backup disks, the service account key and the nightly run time, and checks them. Leave your existing folders where they are; just check that none of your old shoot folders already contains a folder named Originals or Derived.
 6. **Check the disks match:** run `archive-sync --report` and fix any differences it lists by hand.
 7. **Nothing else to create.** Each new shoot gets its own folder at the root of the disk, with `Originals` and `Derived` inside it, the first time it's backed up.
 8. **Run the first full hash** by hand: `archive-hasher --full`. It takes days for a large archive, and you can stop and resume it.
@@ -39,11 +39,11 @@ Set up the Windows machine first; the Mac relies on it.
 
 1. **Install** the negatives Mac tools: the card-watch app and the command-line tools (card-check, ingest, ssd-push, ssd-evict).
 2. **Sign in** with your Google account when card-watch first starts. The sign-in is kept in your Keychain.
-3. **Choose your working SSD.** negatives checks that it's APFS and refuses anything else.
-4. **Put existing working folders in `Shoots`** on the SSD, with the same names they have on the archive. negatives backs up anything missing or changed and lets you free them like any other shoot.
-5. **Keep Lightroom catalogs out of `Shoots`** if you still use Lightroom.
-6. **Allow notifications** for card-watch when macOS asks, so you see card summaries.
-7. **Mount the primary share** and let ssd-push reconnect to it automatically.
+3. **Mount the primary share** so it reconnects automatically after restarts; the next step needs it mounted.
+4. **Configure the Mac tools:** run `negatives config init`. It finds your working SSD and the mounted archive share, checks the SSD is APFS, and writes the settings file.
+5. **Put existing working folders in `Shoots`** on the SSD, with the same names they have on the archive. negatives backs up anything missing or changed and lets you free them like any other shoot.
+6. **Keep Lightroom catalogs out of `Shoots`** if you still use Lightroom.
+7. **Allow notifications** for card-watch when macOS asks, so you see card summaries.
 
 Don't create the `Shoots` folder or shoot folders yourself; the first ingest creates them.
 

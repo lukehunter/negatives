@@ -91,6 +91,8 @@ Extra fields by `loc`:
 - `catalog-backup`: `lastStartedAt`, `lastFinishedAt`, `lastOutcome` (`success` or an error), `exportPath`.
 - `sync-request`: `requestedAt` (set by the Mac, cleared by the Windows watcher).
 
+**`config/settings`**: shared tunables. Fields and defaults are in [docs/config.md](config.md#shared-settings). The Mac may write it (validated by the rules); Windows writes it with its service account.
+
 **`conflicts/{id}`**: random ID
 
 `schema`, `kind` (`content-changed`, `backup-mismatch`, `missing`, `bit-rot`, `path-conflict`), `disk`, `path`, `md5`, `detectedAt`, `details`, plus `resolvedAt` and `resolution` once handled.
@@ -99,7 +101,7 @@ Extra fields by `loc`:
 
 | Writer | Identity | Enforced by | May write |
 | --- | --- | --- | --- |
-| Mac tools | Your Google account through Firebase Auth | Security rules | `files/{md5}` (`schema` and `size` only); `paths` docs with `loc` `card` or `ssd`; deleting `ssd` copies; `cardSessions`; `status/sync-request`; marking `conflicts` resolved |
+| Mac tools | Your Google account through Firebase Auth | Security rules | `files/{md5}` (`schema` and `size` only); `paths` docs with `loc` `card` or `ssd`; deleting `ssd` copies; `cardSessions`; `status/sync-request`; `config/settings`; marking `conflicts` resolved |
 | Windows tools | Service account key | IAM role only (server SDKs bypass rules) | Everything except deleting `files` documents, by convention |
 | catalog-backup | Its own service account | IAM | Exports only; no document writes except `status/catalog-backup` |
 

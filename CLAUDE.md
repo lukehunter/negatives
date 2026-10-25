@@ -14,6 +14,8 @@ Status: design only, no code yet. Start with the build order in
 - `docs/schema.md`: field-level catalog schema, path rules and who may write
   what; the contract between the Swift and Go code. Rules are in
   `firestore/firestore.rules`.
+- `docs/config.md`: local TOML files, shared settings in Firestore
+  (`config/settings`), and the `negatives config` command.
 - `docs/tools/*.md`: one spec per tool. Read the relevant one, plus the core
   design, before working on a tool.
 - `docs/user-guide.md`: how the finished tools are installed and used.

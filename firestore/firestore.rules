@@ -105,6 +105,23 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /config/{name} {
+      allow read: if isOwner();
+      // Shared tunables; see docs/config.md.
+      allow create, update: if isOwner()
+        && name == 'settings'
+        && data().keys().hasOnly(['schema', 'derivedSettleMinutes', 'watcherQuietMinutes',
+                                  'commonShootThreshold', 'heartbeatStaleHours',
+                                  'nightlyStaleHours', 'backupStaleDays', 'exclude',
+                                  'updatedAt', 'updatedBy'])
+        && data().schema == 1
+        && data().get('derivedSettleMinutes', 60) is int && data().get('derivedSettleMinutes', 60) > 0
+        && data().get('watcherQuietMinutes', 10) is int && data().get('watcherQuietMinutes', 10) > 0
+        && data().get('commonShootThreshold', 10) is int && data().get('commonShootThreshold', 10) > 1
+        && data().get('exclude', []) is list && data().get('exclude', []).size() <= 200;
+      allow delete: if false;
+    }
+
     match /conflicts/{id} {
       allow read: if isOwner();
       // The Mac may only mark a conflict resolved.

@@ -55,6 +55,7 @@ Planned, as code lands:
 - [Design](docs/design.md): how it works and why.
 - [Tool specs](docs/tools/): one file per tool.
 - [Catalog schema](docs/schema.md): fields, keys and security rules.
+- [Configuration](docs/config.md): config files, shared settings and the `negatives config` command.
 - [User guide](docs/user-guide.md): installing and using the tools.
 
 ## Not yet

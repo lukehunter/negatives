@@ -84,6 +84,8 @@ Status: design only, no code yet. Start with the build order in
 ## To verify early
 
 - Firestore offline writes on macOS (build order step 1 spike).
+- Card volume UUID behavior on real cards: stable across re-inserts and card
+  readers, new after a format (checklist in docs/testing.md, Manual checks).
 - How robocopy handles an interrupted copy with /XC /XN /XO.
 - Lightroom catalog file layout (for lrcat-pack) and whether Catalyst
   metadata edits rewrite card XML files.

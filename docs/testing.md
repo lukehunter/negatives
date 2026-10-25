@@ -92,6 +92,13 @@ Things that need real hardware or real apps, done once and then whenever somethi
 
 - Each editing app with a test shoot: Lightroom, Bridge, Resolve, Catalyst and Gyroflow ignore the hidden `.originals/` folder, write sidecars and renders where expected, and Bridge ratings on JPEGs show up as derived files.
 - A real camera card from each body, including a video card.
+- **Card volume UUID behavior**, which card sessions depend on. With `diskutil info /Volumes/<card> | grep "Volume UUID"`, confirm that the UUID:
+  - stays the same across unmounting and re-inserting;
+  - is the same in every card reader you use (built-in SD slot and USB readers);
+  - stays the same after shooting more and after deleting photos in camera;
+  - changes when the card is formatted in camera, and when it's formatted on the Mac;
+  - differs between two cards formatted in the same camera on the same day.
+  Do this for each card type (SD and CFexpress) and each camera brand.
 - SMART readings through the actual disk enclosures, and disk spin-down on the Windows machine.
 - Firestore offline writes on macOS (build order step 1).
 

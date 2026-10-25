@@ -108,3 +108,4 @@ Things that need real hardware or real apps, done once and then whenever somethi
 - Decided: GitHub Actions from the start, on every push: Go unit and integration tests on Linux and Windows runners, Swift tests on a macOS runner, and the rules tests with the Firestore emulator.
 - Disk-image fixtures run on the macOS runner; Windows VHDX tests and robocopy checks run on the Windows runner.
 - Tests never touch the real Firebase project: they use the emulator only.
+- The camera samples are several hundred MB in Git LFS, and every checkout that downloads them counts against the account's LFS bandwidth. CI jobs that don't need samples skip LFS, and those that do cache the LFS objects between runs.

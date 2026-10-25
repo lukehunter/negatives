@@ -14,8 +14,8 @@ Status: design only, no code yet. Start with the build order in
 - Both were exported on 2026-10-24 from Claude Docs, where they were written:
   design https://claude.ai/artifact/HkVKdewVEUbnjE9YWkYQSC,
   user guide https://claude.ai/artifact/9VRFCXy1DtmpM1Mng7CkvR.
-  The online design doc also has the system overview diagram. If you change
-  a decision, update `docs/design.md` here; treat the repo copy as current.
+  If you change a decision, update `docs/design.md` here; treat the repo
+  copy as current. Its system overview is a Mermaid diagram.
 
 ## Setup this is for
 

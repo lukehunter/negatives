@@ -69,7 +69,41 @@ A memory card is only cleared once every file on it has a hash-verified copy on 
 
 Ten small tools on two machines share one Firestore catalog, plus one manual utility for old Lightroom catalogs (see Extra tools). The Mac tools copy and record what they saw; only the Windows hasher, reading the disks locally, can make a file Safe.
 
-_The system overview diagram lives in the online version of this doc._
+```mermaid
+flowchart TB
+  subgraph Mac["Mac · Swift tools sharing CatalogKit"]
+    card[Memory card<br/>original files]
+    watchc[card-watch<br/>mount trigger]
+    check[card-check<br/>reports status]
+    ingest[ingest<br/>copy + record]
+    ssd[(SSD<br/>.staging + Shoots)]
+    push[ssd-push<br/>background copy]
+    evict[ssd-evict<br/>guided cleanup]
+    restore[ssd-restore<br/>bring a shoot back]
+    swatch[ssd-watch<br/>optional alerts]
+  end
+  fs[(Firestore catalog<br/>one document per file hash)]
+  subgraph Win["Windows host · scheduled task"]
+    primary[(Primary disk<br/>never deleted)]
+    sync[archive-sync<br/>robocopy, additive]
+    backup[(Backup disk<br/>copy of primary)]
+    hasher[archive-hasher<br/>hashes both disks locally]
+    scrub[archive-scrub<br/>sampling + SMART]
+  end
+  watchc -. runs .-> check
+  card --> check
+  card --> ingest --> ssd
+  ssd --> push -- SMB --> primary
+  evict --> ssd
+  primary -- SMB --> restore --> ssd
+  ssd -. watched .-> swatch
+  primary --> sync --> backup
+  primary --> hasher
+  backup --> hasher
+  hasher -- primary + backup hashes --> fs
+  scrub --> fs
+  Mac <-- card + SSD facts, queued offline --> fs
+```
 
 The Mac never decides a file is Safe on its own. It reads that from facts the Windows host publishes after hashing both disks.
 

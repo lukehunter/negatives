@@ -236,7 +236,7 @@ If one is moved or renamed anyway, the catalog keeps things safe rather than the
 **Naming**
 
 - **Shoot folder:** the latest capture date on the card, plus an optional description you type at ingest (`2026-10-18 Coast`).
-- **Card folder:** the camera model from the files' EXIF plus a counter within the shoot (`ILCE-7M4-01`, `DJI-Mini4-01`). Every brand writes a Model tag.
+- **Card folder:** a camera name plus a counter within the shoot (`a7rv-01`, `osmo4p-01`). The name comes from the shared `cameraNames` map, keyed by the files' EXIF `Model`; an unmapped model uses its EXIF name as-is (`ILCE-7M4-01`). Every brand writes a Model tag.
 - **Windows-safe names:** ingest rejects names containing `: * ? " < > |` or ending in a space or period, before copying anything.
 
 **Card sessions**

@@ -4,14 +4,13 @@ Real files from each camera in use, for realistic test fixtures. See [docs/testi
 
 ## Layout
 
-One folder per camera, named after the camera's EXIF `Model` (the same name ingest uses for card folders), keeping the card's own structure inside:
+One folder per card copy, with any informal name, keeping the card's own structure inside. [MANIFEST.md](MANIFEST.md) records what each folder really contains: camera models, notable files and quirks. Update it whenever a sample is added.
 
 ```text
 testdata/samples/
-└── ILCE-7M4/
-    ├── DCIM/100MSDCF/DSC00001.JPG
-    ├── DCIM/100MSDCF/DSC00002.ARW
-    └── PRIVATE/M4ROOT/CLIP/C0001.MP4      plus its sidecar and index files
+└── a7rv/
+    ├── DCIM/100MSDCF/DSC09310.ARW
+    └── PRIVATE/M4ROOT/CLIP/r20261025_2207.MP4      plus its sidecar and index files
 ```
 
 ## What to include per camera
@@ -22,6 +21,5 @@ testdata/samples/
 
 ## Before committing
 
-- Strip GPS and other personal metadata, so the repo is safe to make public later:
-  `exiftool -gps:all= -xmp:geotag= -overwrite_original -r testdata/samples/<camera>`
+- Check for location data, so the repo is safe to make public later: `exiftool -r -ee3 -a -G1 -gps:all testdata/samples | grep -i gps`. All-zero values are placeholders and fine. Prefer re-shooting with location off over stripping, so samples stay unmodified.
 - Files here are stored with Git LFS (see `.gitattributes` at the repo root). Install it once with `brew install git-lfs && git lfs install`.

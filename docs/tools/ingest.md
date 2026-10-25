@@ -2,7 +2,7 @@
 
 Card to SSD. Part of [negatives](../design.md). Shared concepts live in the design doc: [data model](../design.md#data-model), [folder layout](../design.md#folder-layout) and [safety rules](../design.md#safety-rules-and-failure-modes).
 
-- Picks the shoot folder (latest capture date + optional description) and the card folder (camera model + counter). A card re-inserted before formatting is recognized by its volume UUID; if it has both old and new files, ingest asks whether to continue the previous shoot or start a new one.
+- Picks the shoot folder (latest capture date + optional description) and the card folder (camera name from `cameraNames`, or the EXIF model, plus a counter). A card re-inserted before formatting is recognized by its volume UUID; if it has both old and new files, ingest asks whether to continue the previous shoot or start a new one.
 - Reads each file from the card exactly once. Files the card's session already knows (same path, size and mtime, from cached hashes) are skipped without being read.
 - Every other file is written to a temporary `.partial` file inside the shoot's `.originals/` while it's hashed. When the read finishes:
   - new content is renamed to `<shoot>/.originals/<card>/<path on card>`, keeping the card's structure;

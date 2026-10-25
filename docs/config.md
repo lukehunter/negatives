@@ -81,6 +81,7 @@ The Firestore document `config/settings`. Each tool reads it at the start of eve
 | `heartbeatStaleHours` | 4 | Mac: warn when the Windows heartbeat is older than this |
 | `nightlyStaleHours` | 36 | Mac: warn when the last full run is older than this |
 | `backupStaleDays` | 14 | Mac: warn when the last catalog export is older than this |
+| `cameraNames` | `{ "ILCE-7RM5": "a7rv", "ILCE-7SM3": "a7s3", "PP-041": "osmo4p", "Canon PowerShot SX740 HS": "sx740hs", "X100VI": "x100vi" }` | ingest: readable names for card folders, keyed by EXIF `Model`. Unmapped models use the EXIF name. |
 | `exclude` | See [ssd-push](tools/ssd-push.md) | ssd-push: glob patterns never pushed (caches, proxies, `.DS_Store`, …) |
 
 The document also carries `schema`, `updatedAt` and `updatedBy`.

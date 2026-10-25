@@ -112,13 +112,14 @@ service cloud.firestore {
         && name == 'settings'
         && data().keys().hasOnly(['schema', 'derivedSettleMinutes', 'watcherQuietMinutes',
                                   'commonShootThreshold', 'heartbeatStaleHours',
-                                  'nightlyStaleHours', 'backupStaleDays', 'exclude',
+                                  'nightlyStaleHours', 'backupStaleDays', 'exclude', 'cameraNames',
                                   'updatedAt', 'updatedBy'])
         && data().schema == 1
         && data().get('derivedSettleMinutes', 60) is int && data().get('derivedSettleMinutes', 60) > 0
         && data().get('watcherQuietMinutes', 10) is int && data().get('watcherQuietMinutes', 10) > 0
         && data().get('commonShootThreshold', 10) is int && data().get('commonShootThreshold', 10) > 1
-        && data().get('exclude', []) is list && data().get('exclude', []).size() <= 200;
+        && data().get('exclude', []) is list && data().get('exclude', []).size() <= 200
+        && data().get('cameraNames', {}) is map && data().get('cameraNames', {}).size() <= 100;
       allow delete: if false;
     }
 

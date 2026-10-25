@@ -32,6 +32,7 @@ The invariants:
 **Unit tests** (fast, no disks or network)
 
 - Path normalization: NFD to NFC, reserved names and characters, length limits, `..` and empty segments.
+- Case-insensitive path matching (`private/` and `PRIVATE/` are the same folder).
 - `pathKey`, MD5 and derived states, checked against **shared golden vectors** in `testdata/vectors.json`, which both the Swift and the Go test suites load. This is what keeps the two languages in agreement.
 - Shoot naming from capture dates, card folder counters, mixed-camera cards, Windows-unsafe names.
 - Exclude-pattern matching, including the rule that `.originals/` can never be excluded.

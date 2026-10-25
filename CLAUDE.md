@@ -9,7 +9,10 @@ Status: design only, no code yet. Start with the build order in
 
 ## Docs
 
-- `docs/design.md`: the design (source of truth for decisions).
+- `docs/design.md`: the core design (source of truth for decisions): data
+  model, folder layout, safety rules, build order.
+- `docs/tools/*.md`: one spec per tool. Read the relevant one, plus the core
+  design, before working on a tool.
 - `docs/user-guide.md`: how the finished tools are installed and used.
 - Both were exported on 2026-10-24 from Claude Docs, where they were written:
   design https://claude.ai/artifact/HkVKdewVEUbnjE9YWkYQSC,

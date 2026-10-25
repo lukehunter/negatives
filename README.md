@@ -53,6 +53,7 @@ Planned, as code lands:
 ## Docs
 
 - [Design](docs/design.md): how it works and why.
+- [Tool specs](docs/tools/): one file per tool.
 - [User guide](docs/user-guide.md): installing and using the tools.
 
 ## Not yet

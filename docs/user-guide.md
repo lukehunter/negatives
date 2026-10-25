@@ -29,7 +29,7 @@ Set up the Windows machine first; the Mac relies on it.
 3. **Create a service account key** in your Google Cloud project with only Firestore access. Save the key file somewhere only the account that runs the task can read it. Don't sign in with your own Google account on this machine.
 4. **Pack old Lightroom catalogs** (optional, but recommended): run `lrcat-pack <archive folder>` to see what it finds, then `--apply` to pack them. See Other tasks.
 5. **Configure the Windows tools:** run `negatives config init`. It asks for your primary and backup disks, the service account key and the nightly run time, and checks them. Leave your existing folders where they are; just check that none of your old shoot folders already contains a folder named Originals or Derived.
-6. **Check the disks match:** run `archive-sync --report` and fix any differences it lists by hand.
+6. **Check the disks match:** run `archive-sync --report` and fix any differences it lists by hand. It changes nothing on either disk, and writes the list to `archive-sync-report-<time>.tsv` in the logs folder.
 7. **Nothing else to create.** Each new shoot gets its own folder at the root of the disk, with `Originals` and `Derived` inside it, the first time it's backed up.
 8. **Run the first full hash** by hand: `archive-hasher --full`. It takes days for a large archive, and you can stop and resume it.
 9. **Turn on automation:** `negatives install-task` creates the scheduled task, the startup run, the nightly run and the watcher.

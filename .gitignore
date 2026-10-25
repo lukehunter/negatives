@@ -3,3 +3,5 @@
 # Firebase CLI
 .firebase/
 firebase-debug.log
+# Go build output
+*.exe

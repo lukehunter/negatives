@@ -1,0 +1,30 @@
+name: windows-go
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: windows
+    steps:
+      # No Git LFS: these tests don't use the camera samples.
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: windows/go.mod
+          cache-dependency-path: windows/go.sum
+      - run: go vet ./...
+      - run: go test ./...
+      - name: Tests against the real robocopy
+        if: runner.os == 'Windows'
+        env:
+          NEGATIVES_BIG_MB: "2048"
+        run: go test -tags robocopy -v ./internal/archivesync -run Robocopy

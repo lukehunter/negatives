@@ -305,7 +305,7 @@ Every failure below leaves a file in Pending, never in Safe.
 
 | Failure | Effect | Handling |
 | --- | --- | --- |
-| Interrupted robocopy copy | Partial file on backup | Reconcile moves it to quarantine (never deletes it); next run recopies |
+| Interrupted robocopy copy | Partial file on backup | Kept until archive-hasher has verified the primary copy; then reconcile moves it to quarantine (never deletes it) and the same run recopies it |
 | Corrupt write to primary over SMB | Primary hash differs from card hash | Stays Pending; re-ingest from the card |
 | Scheduled task stops running | Catalog goes stale | Mac warns on stale status; nothing becomes Safe |
 | Mac offline | Writes queue locally | No format or evict decisions until online |
@@ -359,7 +359,7 @@ Existing folders stay where they are. Every shoot folder without a .negatives ma
 Testing for every step is described in [docs/testing.md](testing.md). Each step ships something usable on its own, and the read-only card check arrives before anything that copies or deletes.
 
 1. **Spike: Firestore on macOS.** Sign in, write offline, quit, reconnect, confirm the write lands. This validates the riskiest assumption first. Also confirm the SSD is APFS so ingest can clone.
-2. **archive-sync.** Replaces any existing copy job; test interrupted copies with a large video. Run lrcat-pack before this step, so the first hash skips the catalog clutter.
+2. **archive-sync.** Replaces any existing copy job; test interrupted copies with a large video ([manual tests](tools/archive-sync-manual-tests.md)). Run lrcat-pack before this step, so the first hash skips the catalog clutter. Until step 3, reconcile has no verified hashes, so it reports partial copies and keeps them.
 3. **Schema spec + archive-hasher.** The spec is in [docs/schema.md](schema.md); test the security rules in the Firebase emulator, then write the hasher. Run the first full hash by hand.
 4. **CatalogKit + card-check.** Immediately answers "is this old card already archived?" for every card in the drawer.
 5. **ingest + ssd-push.** Card to SSD with sightings recorded, then ssd-push copies the SSD to primary in the background. ssd-watch is optional and can come last.

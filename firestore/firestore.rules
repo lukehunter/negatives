@@ -7,9 +7,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Replace with the owner's Firebase Auth UID before deploying.
+    // The owner's Firebase Auth UID (luke.hunter@gmail.com, Google sign-in).
     function isOwner() {
-      return request.auth != null && request.auth.uid == 'OWNER_UID';
+      return request.auth != null && request.auth.uid == 'zEWqHBCb1TOhW0K043mNo35ea1n1';
     }
 
     function data() { return request.resource.data; }
@@ -121,6 +121,20 @@ service cloud.firestore {
         && data().get('exclude', []) is list && data().get('exclude', []).size() <= 200
         && data().get('cameraNames', {}) is map && data().get('cameraNames', {}).size() <= 100;
       allow delete: if false;
+    }
+
+    // TEMPORARY: build order step 1 only (spikes/firestore-offline). Owner-only,
+    // create-only test documents, kept apart from the catalog. Remove after the spike.
+    match /spikes/{runId} {
+      allow read: if isOwner();
+      allow create: if isOwner()
+        && runId.matches('^[0-9a-z-]{1,64}$')
+        && data().keys().hasOnly(['schema', 'runId', 'writtenAt', 'writerPid', 'host', 'note'])
+        && data().schema == 1
+        && data().runId == runId
+        && data().writtenAt is timestamp
+        && data().writerPid is int;
+      allow update, delete: if false;
     }
 
     match /conflicts/{id} {

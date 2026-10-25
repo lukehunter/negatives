@@ -52,8 +52,12 @@ Status: design only, no code yet. Start with the build order in
   `GoogleService-Info.plist` lives at
   `~/Library/Application Support/negatives/GoogleService-Info.plist`, never
   in the repo.
-- Still to do: replace `OWNER_UID` in `firestore/firestore.rules` after the
-  first sign-in and deploy the rules; turn off new sign-ups after that.
+- Firestore location `us-west2`. Owner UID is in `firestore/firestore.rules`;
+  rules deployed 2026-10-25 with `firebase deploy --only firestore:rules`
+  (`firebase.json`, `.firebaserc` at the repo root).
+- The rules include a temporary `spikes/{id}` block for build order step 1;
+  remove it and redeploy once the spike is done.
+- Still to do: turn off new sign-ups.
 
 ## Key decisions (details and reasons in docs/design.md)
 
@@ -97,7 +101,9 @@ Status: design only, no code yet. Start with the build order in
 
 ## To verify early
 
-- Firestore offline writes on macOS (build order step 1 spike).
+- Firestore offline writes on macOS: verified 2026-10-25 (findings in
+  `spikes/firestore-offline/README.md`). Still to do for step 1: confirm the
+  SSD is APFS.
 - Card volume UUID behavior on real cards: stable across re-inserts and card
   readers, new after a format (checklist in docs/testing.md, Manual checks).
 - How robocopy handles an interrupted copy with /XC /XN /XO.

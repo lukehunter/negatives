@@ -101,7 +101,7 @@ Things that need real hardware or real apps, done once and then whenever somethi
   - differs between two cards formatted in the same camera on the same day.
   Do this for each card type (SD and CFexpress) and each camera brand.
 - SMART readings through the actual disk enclosures, and disk spin-down on the Windows machine.
-- Firestore offline writes on macOS (build order step 1).
+- Firestore offline writes on macOS (build order step 1): passed 2026-10-25; method and findings in [spikes/firestore-offline](../spikes/firestore-offline/README.md).
 
 ## Continuous integration
 

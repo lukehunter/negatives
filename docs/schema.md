@@ -112,7 +112,7 @@ The Windows service account has the Cloud Datastore User role, which security ru
 
 The rules live in [`firestore/firestore.rules`](../firestore/firestore.rules). They:
 
-- allow only one Firebase Auth user, the owner, identified by UID (fill in `OWNER_UID` before deploying);
+- allow only one Firebase Auth user, the owner, identified by UID (set in `isOwner()`);
 - let the owner read everything;
 - restrict the owner's writes to the table above, validating field names, types, `schema == 1`, `loc` values and path shape, and keeping `loc` and `path` unchanged on update;
 - deny everything else, including any collection not listed.

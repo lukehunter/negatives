@@ -1,0 +1,55 @@
+# XcodeGen spec for the spike. ./setup.sh writes Local.xcconfig and generates
+# FirestoreOfflineSpike.xcodeproj from this file; neither is committed.
+name: FirestoreOfflineSpike
+options:
+  deploymentTarget:
+    macOS: "14.0"
+configFiles:
+  Debug: Local.xcconfig
+  Release: Local.xcconfig
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk.git
+    from: 13.1.0
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS.git
+    from: 10.1.0
+targets:
+  FirestoreOfflineSpike:
+    type: application
+    platform: macOS
+    sources:
+      - Sources/FirestoreOfflineSpike
+    info:
+      path: Generated/Info.plist
+      properties:
+        CFBundleDisplayName: Firestore offline spike
+        LSApplicationCategoryType: public.app-category.developer-tools
+        # GoogleSignIn refuses to start unless the reversed client ID is a registered URL scheme.
+        CFBundleURLTypes:
+          - CFBundleURLName: google-sign-in
+            CFBundleURLSchemes:
+              - $(GOOGLE_REVERSED_CLIENT_ID)
+    # Keychain Sharing: Firebase Auth stores the user in the data protection keychain,
+    # which needs a provisioned app (an unsigned build fails with -34018).
+    entitlements:
+      path: Generated/FirestoreOfflineSpike.entitlements
+      properties:
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)net.lukehunter.negatives
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: net.lukehunter.negatives
+        PRODUCT_NAME: FirestoreOfflineSpike
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_HARDENED_RUNTIME: NO
+        SWIFT_VERSION: "5.0"
+    dependencies:
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: GoogleSignIn
+        product: GoogleSignIn

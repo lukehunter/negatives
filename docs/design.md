@@ -373,3 +373,4 @@ Testing for every step is described in [docs/testing.md](testing.md). Each step 
 - [ ] **Interface:** answered: triggered automatically when a card mounts, with a notification (see [card-watch](tools/card-watch.md)).
 - [ ] **SSD cleanup:** answered: by shoot folder, and only whole shoot folders are ever removed.
 - [ ] **Card tracking:** answered: yes, with a short physical ID per card (see Card sessions).
+- [ ] **Packaging the Mac tools:** raised by the [Firestore spike](../spikes/firestore-offline/README.md#findings). Firebase Auth needs a provisioned, signed app (plain command-line tools can't sign in), and Firestore's offline cache can be open in only one process per Firebase app name. Options: one signed app that runs every tool and holds the cache, or tools that take turns. Queued writes that the rules reject are dropped silently, so tools validate before writing.

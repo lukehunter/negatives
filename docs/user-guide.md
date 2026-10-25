@@ -52,9 +52,9 @@ Don't create the `Shoots` folder or shoot folders yourself; the first ingest cre
 2. **Click Ingest** if there's anything to copy. Type an optional description for the shoot (such as "Coast"); the folder becomes `2026-10-18 Coast`. On a card's first use since formatting, you're also asked for its card ID. If the card has files from an earlier ingest plus new ones, you're asked whether to continue that shoot or start a new one; click Preview to open the first new file and decide.
 3. **Start editing** in `Shoots/<shoot>` on the SSD as soon as the done notification appears. Rate, add sidecars, render panoramas and videos into the shoot folder as usual; it all gets backed up.
 4. **Leave the card alone for now.** In the background, your files are copied to the Windows machine, mirrored to the backup disk and verified. This needs the Windows machine to be on.
-Add new folders to a shoot whenever you like, but don't move or rename existing folders: paths are meant to match the archive. If you do, nothing is lost, but you'll get a notification and the archive keeps the old names.
-
 5. **Insert the card again later.** When the notification says it's safe to format, format it in the camera.
+
+Add new folders to a shoot whenever you like, but don't move or rename existing folders: paths are meant to match the archive. If you do, nothing is lost, but you'll get a notification and the archive keeps the old names.
 
 What the states mean:
 

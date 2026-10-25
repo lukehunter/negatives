@@ -356,7 +356,7 @@ Existing folders stay where they are. Every shoot folder without a .negatives ma
 
 ## Build order
 
-Each step ships something usable on its own, and the read-only card check arrives before anything that copies or deletes.
+Testing for every step is described in [docs/testing.md](testing.md). Each step ships something usable on its own, and the read-only card check arrives before anything that copies or deletes.
 
 1. **Spike: Firestore on macOS.** Sign in, write offline, quit, reconnect, confirm the write lands. This validates the riskiest assumption first. Also confirm the SSD is APFS so ingest can clone.
 2. **archive-sync.** Replaces any existing copy job; test interrupted copies with a large video. Run lrcat-pack before this step, so the first hash skips the catalog clutter.

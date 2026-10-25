@@ -16,6 +16,9 @@ Status: design only, no code yet. Start with the build order in
   `firestore/firestore.rules`.
 - `docs/config.md`: local TOML files, shared settings in Firestore
   (`config/settings`), and the `negatives config` command.
+- `docs/testing.md`: invariants, test layers, fixtures (card and SSD disk
+  images), failure injection, CI. Shared golden vectors keep Swift and Go in
+  agreement.
 - `docs/tools/*.md`: one spec per tool. Read the relevant one, plus the core
   design, before working on a tool.
 - `docs/user-guide.md`: how the finished tools are installed and used.

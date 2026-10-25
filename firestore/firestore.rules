@@ -123,20 +123,6 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // TEMPORARY: build order step 1 only (spikes/firestore-offline). Owner-only,
-    // create-only test documents, kept apart from the catalog. Remove after the spike.
-    match /spikes/{runId} {
-      allow read: if isOwner();
-      allow create: if isOwner()
-        && runId.matches('^[0-9a-z-]{1,64}$')
-        && data().keys().hasOnly(['schema', 'runId', 'writtenAt', 'writerPid', 'host', 'note'])
-        && data().schema == 1
-        && data().runId == runId
-        && data().writtenAt is timestamp
-        && data().writerPid is int;
-      allow update, delete: if false;
-    }
-
     match /conflicts/{id} {
       allow read: if isOwner();
       // The Mac may only mark a conflict resolved.

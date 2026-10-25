@@ -4,9 +4,12 @@ Build order step 1 in [docs/design.md](../../docs/design.md#build-order). Throwa
 the Firebase Apple SDK queues a write made with the network off, keeps it across quitting
 the app, and sends it after a relaunch with the network on.
 
-It writes only to a temporary `spikes/{id}` collection (owner-only, create-only; see
-`firestore/firestore.rules`). It never touches the catalog collections, and deletes nothing
-in Firestore or on disk.
+It writes only to a temporary `spikes/{id}` collection. It never touches the catalog
+collections, and deletes nothing in Firestore or on disk.
+
+**Done 2026-10-25, and the `spikes` rule has been removed from `firestore/firestore.rules`.**
+To run the spike again, restore that block from git history (commit `0e87744`) and deploy,
+then remove it afterwards.
 
 ## What it checks
 
@@ -134,6 +137,7 @@ Optional second run, for a crash instead of a clean quit: click **Start over**, 
 ### F. After the spike
 
 - Remove the `spikes` block from `firestore/firestore.rules` and deploy again (step 13).
+  Done 2026-10-25.
 - Free Personal Team profiles expire after about 7 days; Xcode renews them when you build.
 
 ## Findings

@@ -55,8 +55,9 @@ Status: design only, no code yet. Start with the build order in
 - Firestore location `us-west2`. Owner UID is in `firestore/firestore.rules`;
   rules deployed 2026-10-25 with `firebase deploy --only firestore:rules`
   (`firebase.json`, `.firebaserc` at the repo root).
-- The rules include a temporary `spikes/{id}` block for build order step 1;
-  remove it and redeploy once the spike is done.
+- The step 1 spike's temporary `spikes/{id}` rule was removed and the rules
+  redeployed on 2026-10-25. Its test documents remain in `spikes`, unreachable
+  from the Mac.
 - Still to do: turn off new sign-ups.
 
 ## Key decisions (details and reasons in docs/design.md)

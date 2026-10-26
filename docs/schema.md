@@ -117,7 +117,7 @@ The rules live in [`firestore/firestore.rules`](../firestore/firestore.rules). T
 - restrict the owner's writes to the table above, validating field names, types, `schema == 1`, `loc` values and path shape, and keeping `loc` and `path` unchanged on update;
 - deny everything else, including any collection not listed.
 
-Test them with the Firebase emulator and the rules unit-testing library before deploying: one passing and one failing case for each `allow`.
+Test them with the Firebase emulator and the rules unit-testing library before deploying: one passing and one failing case for each `allow`. The tests are in `firestore/tests/`; how to run them is in [docs/testing.md](testing.md#layers).
 
 ## Changing the schema
 

@@ -42,6 +42,8 @@ The invariants:
 **Security rules tests**
 
 - Run in the Firebase emulator with the rules unit-testing library: at least one allowed and one denied case for every `allow` in `firestore/firestore.rules`, plus a check that an unknown user and an unknown collection are denied.
+- In `firestore/tests/rules.test.js` (Node's built-in test runner). The owner UID is read from the rules file. Needs Java 21 and the Firebase CLI; from the repo root: `firebase emulators:exec --only firestore --project demo-negatives "npm test --prefix firestore/tests"` (run `npm ci --prefix firestore/tests` once first). The `demo-` project keeps the emulator offline. CI: `.github/workflows/rules.yml`.
+- Checked by mutation: loosening any one rule (allowing a delete, a size change, an archive `loc`, a `..` path, a card-copy delete, another status document, other conflict fields, or any signed-in user) makes at least one test fail. Set `RULES_FILE` to test a modified copy.
 
 **Integration tests** (against the Firestore emulator)
 

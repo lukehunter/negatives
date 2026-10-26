@@ -3,3 +3,6 @@
 # Firebase CLI
 .firebase/
 firebase-debug.log
+firestore-debug.log
+# Rules tests
+firestore/tests/node_modules/

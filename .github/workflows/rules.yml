@@ -1,0 +1,26 @@
+name: rules
+
+on:
+  push:
+    paths: ['firestore/**', 'firebase.json', '.github/workflows/rules.yml']
+  pull_request:
+    paths: ['firestore/**', 'firebase.json', '.github/workflows/rules.yml']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # No Git LFS: these tests don't use the camera samples.
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: firestore/tests/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci --prefix firestore/tests
+      # demo- project: the emulator never contacts the real project.
+      - run: npx --yes firebase-tools@15 emulators:exec --only firestore --project demo-negatives "npm test --prefix firestore/tests"

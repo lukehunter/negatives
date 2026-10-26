@@ -13,3 +13,15 @@ Go, single binary. Part of [negatives](../design.md). Shared concepts live in th
 - Needs no offline queue: the disks are the source of truth, so a failed publish simply happens again next run.
 - Hashes legacy roots like any other root, so card-check recognizes old cards whose files were archived before negatives existed. Files never disappear from the archive in normal operation, so a file that does is never silently dropped: its facts are kept but marked missing (so it's no longer Safe on that disk), and it's reported as an alert naming the files.
 - **Facts for archive-sync's reconcile** (its `FactSource` interface, in `windows/internal/archivesync`): for a primary path, whether the copy as it is now (size and time) is verified and its MD5, whether that MD5 matches a card hash, whether the path ever held other content, and whether the backup file at the same path, as it is now, has content known elsewhere. See [archive-sync](archive-sync.md#reconcile).
+
+## Decision core (`windows/internal/hasher`)
+
+Pure functions, property-tested; the walking, hashing and publishing around them come next.
+
+- **What to hash** (`NeedsHash`): a file with no entry, a new size or time, or one that was marked missing and is back. Zero-byte files never.
+- **A new hash at a known path** (`Hashed`): the same content keeps its first-verified time. New content under `Originals/` or in a legacy folder (anything outside a negatives shoot) is a `content-changed` conflict; under `Derived/` or elsewhere in a negatives shoot it's a normal replacement. Either way the old hash is kept in the entry's history, which is what archive-sync's reconcile uses to tell that a primary path was edited in place, and the old content loses that copy, so it can stop being Safe. Nothing is fixed automatically.
+- **Missing** (`MarkMissing`): a known file not found is marked missing only if the walk listed its whole top-level folder (or the disk root, for files there) without error. A folder that couldn't be read, or a run that stopped early, never makes anything missing.
+- **Summaries** (`Summaries`): computed from the whole local state. `copies` counts only present copies; `firstVerifiedAt` is the earliest verification on that disk, kept even when the copy goes missing; `shoots` counts distinct top-level folders holding a present copy on either disk, and files at a disk root count toward none.
+- **Publish only what changed** (`Changed`): only summaries that differ from the last published ones are written, and a path fact is written only when it changes. Its `seenAt` is the time of that change, not refreshed every run: refreshing millions of facts every night would blow far past the free daily write quota.
+- **Open:** archive-sync's `FactSource.Lookup` gets only the primary file's size and time. To say whether the backup file "as it is now" holds content known elsewhere, it also needs the backup file's size and time. Until the interface changes, the fact source should answer `BackupContentKnown` conservatively (true whenever any backup entry at that path has content known elsewhere), which can only keep a file in place, never move one.
+

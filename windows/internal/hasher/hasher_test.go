@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lukehunter/negatives/windows/internal/archivesync"
+	"github.com/lukehunter/negatives/windows/internal/catalog"
 	"pgregory.net/rapid"
 )
 
@@ -190,14 +191,118 @@ func TestSummaryInvariants(t *testing.T) {
 	})
 }
 
-func TestChanged(t *testing.T) {
+func TestUpdates(t *testing.T) {
 	a := map[string]Summary{"m1": {Size: 1, Primary: &DiskSummary{FirstVerifiedAt: t0, Copies: 1}}}
 	same := map[string]Summary{"m1": {Size: 1, Primary: &DiskSummary{FirstVerifiedAt: t0, Copies: 1}}}
-	if got := Changed(a, same); len(got) != 0 {
+	if got := Updates(a, same); len(got) != 0 {
 		t.Errorf("unchanged summaries republished: %v", got)
 	}
 	more := map[string]Summary{"m1": {Size: 1, Primary: &DiskSummary{FirstVerifiedAt: t0, Copies: 2}}, "m2": {Size: 3}}
-	if got := Changed(a, more); len(got) != 2 {
-		t.Errorf("changed = %v, want m1 and m2", got)
+	if got := Updates(a, more); len(got) != 2 {
+		t.Errorf("updates = %v, want m1 and m2", got)
 	}
+	// m1 gone from the state: written once with no copies, then left alone.
+	got := Updates(a, map[string]Summary{})
+	if g, ok := got["m1"]; !ok || g.Primary.Copies != 0 || !g.Primary.FirstVerifiedAt.Equal(t0) {
+		t.Fatalf("gone content: %+v", got)
+	}
+	if again := Updates(got, map[string]Summary{}); len(again) != 0 {
+		t.Errorf("gone content republished every run: %v", again)
+	}
+}
+
+// An original edited in place on primary: the old content must stop
+// counting a primary copy in the published catalog, or a card holding it
+// could be reported safe to format.
+func TestEditedOriginalStopsBeingSafe(t *testing.T) {
+	p := "2026-10-18 Coast/Originals/ILCE-7M4-01/DCIM/100MSDCF/DSC00001.JPG"
+	state := map[Key]Entry{
+		KeyOf(Primary, p): {Disk: Primary, Path: p, Size: 10, MtimeNs: 1, MD5: "old", VerifiedAt: t0},
+		KeyOf(Backup, p):  {Disk: Backup, Path: p, Size: 10, MtimeNs: 1, MD5: "old", VerifiedAt: t0},
+	}
+	published := Summaries(state, 10)
+	if published["old"].Catalog() != (catalog.Summary{PrimaryCopies: 1, BackupCopies: 1}) {
+		t.Fatalf("setup: %+v", published["old"].Catalog())
+	}
+	prev := state[KeyOf(Primary, p)]
+	next, ev := Hashed(&prev, Seen{Primary, p, 12, 2}, "new", t0.Add(time.Hour), shoots)
+	if ev == nil || ev.Kind != Conflict {
+		t.Fatalf("want a conflict, got %+v", ev)
+	}
+	state[KeyOf(Primary, p)] = next
+
+	updates := Updates(published, Summaries(state, 10))
+	old, ok := updates["old"]
+	if !ok {
+		t.Fatal("the old content's summary isn't republished, so the catalog still shows its primary copy")
+	}
+	if c := old.Catalog(); c.PrimaryCopies != 0 || c.BackupCopies != 1 {
+		t.Fatalf("old content now %+v, want 0 primary and 1 backup copies", c)
+	}
+	if catalog.StateOf(10, &catalog.Summary{PrimaryCopies: old.Catalog().PrimaryCopies, BackupCopies: old.Catalog().BackupCopies}) == catalog.Safe {
+		t.Fatal("old content still Safe")
+	}
+	if _, ok := updates["new"]; !ok {
+		t.Fatal("the new content's summary isn't published")
+	}
+	// Publishing again changes nothing.
+	for md5, s := range updates {
+		published[md5] = s
+	}
+	if again := Updates(published, Summaries(state, 10)); len(again) != 0 {
+		t.Fatalf("second run republishes %v", again)
+	}
+}
+
+// Across random runs (new content, replacements, edits, missing files),
+// with each run's Updates applied to the published catalog, every hash the
+// catalog has ever held shows exactly the copies present on disk: never a
+// copy that's gone, which could make content look Safe.
+func TestPublishedCatalogMatchesDisk(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		state := map[Key]Entry{}
+		published := map[string]Summary{}
+		now := t0
+		runs := rapid.IntRange(1, 8).Draw(t, "runs")
+		for r := 0; r < runs; r++ {
+			now = now.Add(time.Hour)
+			ops := rapid.IntRange(1, 6).Draw(t, "ops")
+			for i := 0; i < ops; i++ {
+				d := rapid.SampledFrom([]Disk{Primary, Backup}).Draw(t, "disk")
+				p := rapid.SampledFrom([]string{
+					"2026-10-18 Coast/Originals/a.arw", "2026-10-18 Coast/Derived/b.tif", "2019 Beach/c.jpg",
+				}).Draw(t, "path")
+				k := KeyOf(d, p)
+				if rapid.IntRange(0, 4).Draw(t, "op") == 0 {
+					if e, ok := state[k]; ok && e.Present() {
+						at := now
+						e.MissingSince = &at
+						state[k] = e
+					}
+					continue
+				}
+				md5 := rapid.SampledFrom([]string{"m1", "m2", "m3"}).Draw(t, "md5")
+				var prev *Entry
+				if e, ok := state[k]; ok {
+					prev = &e
+				}
+				next, _ := Hashed(prev, Seen{d, p, 10, int64(r)}, md5, now, shoots)
+				state[k] = next
+			}
+			for md5, s := range Updates(published, Summaries(state, 10)) {
+				published[md5] = s
+			}
+		}
+		for md5, s := range published {
+			want := map[Disk]int{}
+			for _, e := range state {
+				if e.MD5 == md5 && e.Present() {
+					want[e.Disk]++
+				}
+			}
+			if c := s.Catalog(); c.PrimaryCopies != want[Primary] || c.BackupCopies != want[Backup] {
+				t.Fatalf("%s published %+v, disk has %v", md5, c, want)
+			}
+		}
+	})
 }

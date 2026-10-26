@@ -1,0 +1,83 @@
+# 2026/10/25 19:25:56.119767 [TestPublishedCatalogMatchesDisk] [rapid] draw runs: 5
+# 2026/10/25 19:25:56.119786 [TestPublishedCatalogMatchesDisk] [rapid] draw ops: 1
+# 2026/10/25 19:25:56.119787 [TestPublishedCatalogMatchesDisk] [rapid] draw disk: "primary"
+# 2026/10/25 19:25:56.119790 [TestPublishedCatalogMatchesDisk] [rapid] draw path: "2026-10-18 Coast/Originals/a.arw"
+# 2026/10/25 19:25:56.119790 [TestPublishedCatalogMatchesDisk] [rapid] draw op: 0
+# 2026/10/25 19:25:56.119791 [TestPublishedCatalogMatchesDisk] [rapid] draw ops: 1
+# 2026/10/25 19:25:56.119791 [TestPublishedCatalogMatchesDisk] [rapid] draw disk: "primary"
+# 2026/10/25 19:25:56.119791 [TestPublishedCatalogMatchesDisk] [rapid] draw path: "2019 Beach/c.jpg"
+# 2026/10/25 19:25:56.119791 [TestPublishedCatalogMatchesDisk] [rapid] draw op: 1
+# 2026/10/25 19:25:56.119793 [TestPublishedCatalogMatchesDisk] [rapid] draw md5: "m1"
+# 2026/10/25 19:25:56.119794 [TestPublishedCatalogMatchesDisk] [rapid] draw ops: 1
+# 2026/10/25 19:25:56.119794 [TestPublishedCatalogMatchesDisk] [rapid] draw disk: "primary"
+# 2026/10/25 19:25:56.119794 [TestPublishedCatalogMatchesDisk] [rapid] draw path: "2026-10-18 Coast/Originals/a.arw"
+# 2026/10/25 19:25:56.119794 [TestPublishedCatalogMatchesDisk] [rapid] draw op: 0
+# 2026/10/25 19:25:56.119795 [TestPublishedCatalogMatchesDisk] [rapid] draw ops: 1
+# 2026/10/25 19:25:56.119795 [TestPublishedCatalogMatchesDisk] [rapid] draw disk: "primary"
+# 2026/10/25 19:25:56.119795 [TestPublishedCatalogMatchesDisk] [rapid] draw path: "2026-10-18 Coast/Originals/a.arw"
+# 2026/10/25 19:25:56.119796 [TestPublishedCatalogMatchesDisk] [rapid] draw op: 0
+# 2026/10/25 19:25:56.119797 [TestPublishedCatalogMatchesDisk] [rapid] draw ops: 1
+# 2026/10/25 19:25:56.119797 [TestPublishedCatalogMatchesDisk] [rapid] draw disk: "primary"
+# 2026/10/25 19:25:56.119797 [TestPublishedCatalogMatchesDisk] [rapid] draw path: "2019 Beach/c.jpg"
+# 2026/10/25 19:25:56.119798 [TestPublishedCatalogMatchesDisk] [rapid] draw op: 1
+# 2026/10/25 19:25:56.119798 [TestPublishedCatalogMatchesDisk] [rapid] draw md5: "m2"
+# 2026/10/25 19:25:56.119799 [TestPublishedCatalogMatchesDisk] m1 published {PrimaryCopies:1 BackupCopies:0}, disk has map[]
+# 
+v0.4.8#533543015324497667
+0x0
+0x6b74f03291620
+0x4
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x38e38e38e38e4
+0x2
+0x0
+0x0
+0x1
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x38e38e38e38e4
+0x2
+0x0
+0x0
+0x1
+0x0
+0x1

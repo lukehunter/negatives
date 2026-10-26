@@ -84,18 +84,38 @@ func Summaries(state map[Key]Entry, commonThreshold int) map[string]Summary {
 	return out
 }
 
-// Changed returns the hashes whose summary differs from what was last
-// published, so a run writes only those documents. Publishing every
-// summary, or refreshing every path fact's time, on every run would cost
-// millions of writes a night for a large archive.
-func Changed(published, current map[string]Summary) []string {
-	var out []string
+// Updates returns the summaries a run must write: those that differ from
+// what was last published, and those for content the local state no longer
+// holds at all (its only path got new content: a replaced Derived file or
+// an original edited in place). The second kind is written with no copies
+// on either disk, keeping its first-verified times, so the catalog never
+// goes on showing a copy that's gone. Writing only what changed matters:
+// publishing every summary, or refreshing every path fact's time, on every
+// run would cost millions of writes a night for a large archive.
+func Updates(published, current map[string]Summary) map[string]Summary {
+	out := map[string]Summary{}
 	for md5, s := range current {
 		if p, ok := published[md5]; !ok || !sameSummary(p, s) {
-			out = append(out, md5)
+			out[md5] = s
+		}
+	}
+	for md5, p := range published {
+		if _, ok := current[md5]; ok {
+			continue
+		}
+		gone := Summary{Size: p.Size, Primary: noCopies(p.Primary), Backup: noCopies(p.Backup)}
+		if !sameSummary(p, gone) {
+			out[md5] = gone
 		}
 	}
 	return out
+}
+
+func noCopies(d *DiskSummary) *DiskSummary {
+	if d == nil {
+		return nil
+	}
+	return &DiskSummary{FirstVerifiedAt: d.FirstVerifiedAt}
 }
 
 func sameSummary(a, b Summary) bool {

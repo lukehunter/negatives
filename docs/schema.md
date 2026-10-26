@@ -21,11 +21,13 @@ The field-level contract between the Mac tools (Swift) and the Windows tools (Go
 - Stored relative to a root: the card's root, the SSD's `Shoots/` folder, or the archive disk's root. The first segment of an SSD or archive path is the shoot folder.
 - `/` separators, Unicode NFC, case preserved exactly as the file system reports it.
 - Paths are **compared case-insensitively**, because APFS, exFAT and NTFS are all case-insensitive by default: `private/M4ROOT` and `PRIVATE/M4ROOT` are the same folder (the sample cards show both). The stored `path` keeps its original case; `pathKey` and every comparison use the case-folded path.
-- Rejected (tools refuse to create or record them): empty, `.` or `..` segments; leading or trailing `/`; control characters; `: * ? " < > |`; segments ending in a space or period; Windows reserved names (`CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`); more than 1024 characters.
+- **Case folding** is exact, so Swift and Go agree: map each code point to its Unicode *simple* lowercase mapping (one code point to one, no context), then apply NFC. So `İ` (U+0130) becomes a plain `i`, and a final `Σ` becomes `σ`, never `ς`. Swift's `lowercased()` uses the full, context-sensitive mapping, so the Swift code maps per scalar and special-cases U+0130; Go's `unicode.ToLower` is already the simple mapping.
+- Rejected (tools refuse to create or record them): empty, `.` or `..` segments; leading, trailing or doubled `/`; control characters (U+0000–U+001F, U+007F); `: * ? " < > |` and backslash; segments ending in a space or period; Windows reserved names (`CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`, in any case, with or without an extension: `con.txt` and `aux.tar.gz` too); more than 1024 code points after NFC.
+- Shared code: Go in `windows/internal/catalog`; the Swift side will mirror it. Both are tested against the golden vectors in `testdata/vectors.json`, written by `testdata/make_vectors.py`, an independent reference implementation of these rules.
 
 **Keys**
 
-- `pathKey`: the first 16 hex characters of SHA-256 over the UTF-8 bytes of `loc`, a NUL byte, the scope, a NUL byte and the normalized, case-folded path. The scope is the `cardKey` for card copies and empty otherwise. Each copy gets a stable document ID; collisions are negligible within one hash.
+- `pathKey`: the first 16 hex characters (lowercase) of SHA-256 over the UTF-8 bytes of `loc`, a NUL byte, the scope, a NUL byte and the normalized, case-folded path. The scope is the `cardKey` for card copies and empty otherwise; a card copy without a `cardKey`, or any other copy with a scope, is an error. Each copy gets a stable document ID; collisions are negligible within one hash.
 - `cardKey`: the card's volume UUID, lowercase.
 
 **Values**

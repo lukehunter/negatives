@@ -33,7 +33,7 @@ The invariants:
 
 - Path normalization: NFD to NFC, reserved names and characters, length limits, `..` and empty segments.
 - Case-insensitive path matching (`private/` and `PRIVATE/` are the same folder).
-- `pathKey`, MD5 and derived states, checked against **shared golden vectors** in `testdata/vectors.json`, which both the Swift and the Go test suites load. This is what keeps the two languages in agreement.
+- `pathKey`, MD5 and derived states, checked against **shared golden vectors** in `testdata/vectors.json`, which both the Swift and the Go test suites load. This is what keeps the two languages in agreement. The vectors are written by `testdata/make_vectors.py`, a separate Python reference implementation, so expected values never come from the code under test; rerun it and commit when a rule changes. Go: `windows/internal/catalog`, with property tests (NFD and case variants share a `pathKey`; normalizing twice changes nothing; Safe only with copies on both disks).
 - Shoot naming from capture dates, card folder counters, mixed-camera cards, Windows-unsafe names.
 - Exclude-pattern matching, including the rule that `.originals/` can never be excluded.
 - Config parsing and validation for both TOML files and the shared settings.

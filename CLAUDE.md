@@ -4,8 +4,9 @@ Tools that tell a photographer when a memory card is safe to format, keep a
 working SSD for editing, and back everything up to two archive disks, with
 every copy verified by MD5 hash.
 
-Status: design only, no code yet. Start with the build order in
-`docs/design.md`.
+Status: build order step 1 (spike) done; step 2, archive-sync, is written
+(`windows/`, Go) and unit-tested on macOS but not yet run on Windows. Next
+steps are in the build order in `docs/design.md`.
 
 ## Docs
 
@@ -84,6 +85,12 @@ Status: design only, no code yet. Start with the build order in
 - Existing folders in a shoot must never be moved or renamed (new folders are
   fine). If they are, nothing is copied twice: the catalog keeps files Safe by
   hash, and the user is notified that paths differ.
+- archive-sync is Go driving robocopy (one job per top-level folder), not
+  PowerShell. Reconcile quarantines a backup file only when it's smaller than
+  primary and archive-hasher's facts say the primary is verified and unchanged;
+  until step 3 it only reports partial copies. Each archive disk has a
+  `.negatives-disk` identity file (role + ID, made by `disk-id create`), and
+  archive-sync refuses to run unless both match the config.
 - Windows runs are triggered by writes (watcher, 10 quiet minutes), plus a
   nightly safety-net run. Avoid spinning disks unnecessarily.
 - Nothing frees SSD space automatically: ssd-evict is user-run, works on
@@ -107,6 +114,9 @@ Status: design only, no code yet. Start with the build order in
   internal 8 TB disk, APFS (checked with `diskutil info`). Step 1 is done.
 - Card volume UUID behavior on real cards: stable across re-inserts and card
   readers, new after a format (checklist in docs/testing.md, Manual checks).
-- How robocopy handles an interrupted copy with /XC /XN /XO.
+- How robocopy handles an interrupted copy with /XC /XN /XO: checklist and
+  automated test in `docs/tools/archive-sync-manual-tests.md`. If robocopy
+  leaves a full-size partial file, reconcile's size rule can't see it and the
+  design must change before archive-sync is used.
 - Lightroom catalog file layout (for lrcat-pack) and whether Catalyst
   metadata edits rewrite card XML files.

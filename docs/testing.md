@@ -33,11 +33,11 @@ The invariants:
 
 - Path normalization: NFD to NFC, reserved names and characters, length limits, `..` and empty segments.
 - Case-insensitive path matching (`private/` and `PRIVATE/` are the same folder).
-- `pathKey`, MD5 and derived states, checked against **shared golden vectors** in `testdata/vectors.json`, which both the Swift and the Go test suites load. This is what keeps the two languages in agreement.
+- `pathKey`, MD5 and derived states, checked against **shared golden vectors** in `testdata/vectors.json`, which both the Swift and the Go test suites load. This is what keeps the two languages in agreement. The vectors are written by `testdata/make_vectors.py`, a separate Python reference implementation, so expected values never come from the code under test; rerun it and commit when a rule changes. Go: `windows/internal/catalog`, with property tests (NFD and case variants share a `pathKey`; normalizing twice changes nothing; Safe only with copies on both disks).
 - Shoot naming from capture dates, card folder counters, mixed-camera cards, Windows-unsafe names.
 - Exclude-pattern matching, including the rule that `.originals/` can never be excluded.
 - Config parsing and validation for both TOML files and the shared settings.
-- robocopy exit-code handling, with Pester tests for the PowerShell wrapper.
+- archive-sync's decisions, in Go: robocopy exit codes, the robocopy job plan and the reconcile rule, with property tests (pgregory.net/rapid) that check no job writes to primary or targets quarantine and that a backup file is quarantined exactly when every condition holds. Run-level tests use temporary folders as the two disks and a small model of robocopy. Tests against the real robocopy carry the `robocopy` build tag and run only on Windows.
 
 **Security rules tests**
 
@@ -70,7 +70,7 @@ Each of these is a scripted test that interrupts an operation and then checks th
 
 - ingest killed mid-copy: the next run removes its own leftover `.partial` files and finishes; the card stays Pending.
 - ssd-push killed mid-copy, or the share disconnected: the archive has only a `.partial`, which archive-hasher ignores and the next push replaces.
-- robocopy killed mid-file: the partial backup copy is quarantined and recopied (this also verifies how robocopy marks partial files).
+- robocopy killed mid-file: the partial backup copy is kept until the primary copy is verified, then quarantined and recopied (this also verifies how robocopy marks partial files). Automated in `TestRobocopyInterruptedCopy`; by hand in [archive-sync-manual-tests.md](tools/archive-sync-manual-tests.md).
 - A file in `.originals/` changed after clearing its lock: ssd-push refuses it and ssd-watch reports it.
 - A file deleted from the primary disk: archive-hasher reports it missing and it stops counting as Safe.
 - The Mac offline for an ingest, then back online.
@@ -102,12 +102,13 @@ Things that need real hardware or real apps, done once and then whenever somethi
   - changes when the card is formatted in camera, and when it's formatted on the Mac;
   - differs between two cards formatted in the same camera on the same day.
   Do this for each card type (SD and CFexpress) and each camera brand.
+- archive-sync on the Windows host, with test disks: what `/XC /XN /XO` do, an interrupted copy of a large video, report-only mode, the lock and the config refusals. Checklist in [archive-sync-manual-tests.md](tools/archive-sync-manual-tests.md).
 - SMART readings through the actual disk enclosures, and disk spin-down on the Windows machine.
 - Firestore offline writes on macOS (build order step 1): passed 2026-10-25; method and findings in [spikes/firestore-offline](../spikes/firestore-offline/README.md).
 
 ## Continuous integration
 
 - Decided: GitHub Actions from the start, on every push: Go unit and integration tests on Linux and Windows runners, Swift tests on a macOS runner, and the rules tests with the Firestore emulator.
-- Disk-image fixtures run on the macOS runner; Windows VHDX tests and robocopy checks run on the Windows runner.
+- Disk-image fixtures run on the macOS runner; Windows VHDX tests and robocopy checks (`go test -tags robocopy`) run on the Windows runner. The Go workflow is `.github/workflows/windows-go.yml`.
 - Tests never touch the real Firebase project: they use the emulator only.
 - The camera samples are several hundred MB in Git LFS, and every checkout that downloads them counts against the account's LFS bandwidth. CI jobs that don't need samples skip LFS, and those that do cache the LFS objects between runs.

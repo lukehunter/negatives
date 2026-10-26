@@ -204,6 +204,7 @@ EditSSD/
 
 ```text
 P:\
+├── .negatives-disk                      disk identity: role primary, plus its ID
 ├── 2026-10-18 Coast\                    a negatives shoot
 │   ├── .negatives                       marker file
 │   ├── Originals\                       from .originals, never overwritten
@@ -276,6 +277,7 @@ Settings for all of them, on both machines, are described in [docs/config.md](co
 | [archive-hasher](tools/archive-hasher.md) | Hashes both disks locally and publishes verified facts |
 | [archive-scrub](tools/archive-scrub.md) | Nightly sampled re-hashing and SMART checks |
 | [Credentials and scheduling](tools/windows-scheduling.md) | Service account, write-triggered and nightly runs, manual trigger |
+| [disk-id](tools/archive-sync.md#disk-identity) | Writes each archive disk's identity file, once, at setup or for a replacement disk |
 
 **Cloud**
 
@@ -305,13 +307,14 @@ Every failure below leaves a file in Pending, never in Safe.
 
 | Failure | Effect | Handling |
 | --- | --- | --- |
-| Interrupted robocopy copy | Partial file on backup | Reconcile moves it to quarantine (never deletes it); next run recopies |
+| Interrupted robocopy copy | Partial file on backup | Kept until archive-hasher has verified the primary copy; then reconcile moves it to quarantine (never deletes it) and the same run recopies it |
 | Corrupt write to primary over SMB | Primary hash differs from card hash | Stays Pending; re-ingest from the card |
 | Scheduled task stops running | Catalog goes stale | Mac warns on stale status; nothing becomes Safe |
 | Mac offline | Writes queue locally | No format or evict decisions until online |
 | Original edited in place on primary | Same path, new content | Reported to `conflicts`; backup keeps the original |
 | Same file on two cards | Same hash, two card sightings | One document; both cards show it as copied |
 | Service account key leaked | Full Firestore read/write | Isolated project; rotate the key. Disks are unaffected |
+| Drive letters swapped, or a disk cloned or replaced | The configured primary is really the backup, or a different disk | archive-sync checks each disk's `.negatives-disk` identity against the config before every run and refuses, logging why; nothing is copied. A replacement disk gets a new identity by hand with `disk-id create` |
 | File disappears from an archive disk | Its facts stay but are marked missing, so it's no longer Safe | Alert naming the files; restore from the other disk or the online backup |
 | Catalog lost or corrupted | Safety checks have nothing to read | Import the latest weekly export, then reconcile the archive and the Mac (see [catalog-backup](tools/catalog-backup.md)) |
 
@@ -342,10 +345,11 @@ Existing folders stay where they are. Every shoot folder without a .negatives ma
 
 1. **Pack old Lightroom catalogs** with lrcat-pack on both disks (see [lrcat-pack](tools/lrcat-pack.md)). It removes millions of small files before the first hash, which then runs much faster.
 2. **Leave existing folders at the root** of both disks. Each old shoot folder stays whole, never split into Originals and Derived; their cards were formatted long ago, so they're simply protected and verified as they are. Check that no old shoot folder already contains a folder named Originals or Derived. Edits to a restored old shoot go to a Derived folder inside it.
-3. **Check that primary and backup match** before turning anything on: run archive-sync in report-only mode (robocopy `/L`) and resolve differences by hand.
-4. **Nothing to create:** each new shoot's folder, with its Originals and Derived folders, is created by its first push.
-5. **Run the first full hash by hand** (days; see [scheduling](tools/windows-scheduling.md)), then enable the scheduled task and the watcher.
-6. **Check the card drawer:** insert old cards and let card-check report which are already safe to format.
+3. **Give each disk its identity** with `disk-id create --role primary` and `--role backup` (or `negatives config init`, which does the same), and put the two IDs in the config. This writes one small `.negatives-disk` file at each disk's root; nothing else on the disks changes.
+4. **Check that primary and backup match** before turning anything on: run archive-sync in report-only mode (robocopy `/L`) and resolve differences by hand.
+5. **Nothing else to create:** each new shoot's folder, with its Originals and Derived folders, is created by its first push.
+6. **Run the first full hash by hand** (days; see [scheduling](tools/windows-scheduling.md)), then enable the scheduled task and the watcher.
+7. **Check the card drawer:** insert old cards and let card-check report which are already safe to format.
 
 **Mac**
 
@@ -359,7 +363,7 @@ Existing folders stay where they are. Every shoot folder without a .negatives ma
 Testing for every step is described in [docs/testing.md](testing.md). Each step ships something usable on its own, and the read-only card check arrives before anything that copies or deletes.
 
 1. **Spike: Firestore on macOS.** Sign in, write offline, quit, reconnect, confirm the write lands. This validates the riskiest assumption first. Also confirm the SSD is APFS so ingest can clone.
-2. **archive-sync.** Replaces any existing copy job; test interrupted copies with a large video. Run lrcat-pack before this step, so the first hash skips the catalog clutter.
+2. **archive-sync.** Replaces any existing copy job; test interrupted copies with a large video ([manual tests](tools/archive-sync-manual-tests.md)). Run lrcat-pack before this step, so the first hash skips the catalog clutter. Until step 3, reconcile has no verified hashes, so it reports partial copies and keeps them.
 3. **Schema spec + archive-hasher.** The spec is in [docs/schema.md](schema.md); test the security rules in the Firebase emulator, then write the hasher. Run the first full hash by hand.
 4. **CatalogKit + card-check.** Immediately answers "is this old card already archived?" for every card in the drawer.
 5. **ingest + ssd-push.** Card to SSD with sightings recorded, then ssd-push copies the SSD to primary in the background. ssd-watch is optional and can come last.

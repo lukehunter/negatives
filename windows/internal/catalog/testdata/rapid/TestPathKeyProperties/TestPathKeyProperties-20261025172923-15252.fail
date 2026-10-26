@@ -1,0 +1,12 @@
+# 2026/10/25 17:29:23.483668 [TestPathKeyProperties] [rapid] draw path: "İ"
+# 2026/10/25 17:29:23.483670 [TestPathKeyProperties] [rapid] draw loc: "ssd"
+# 2026/10/25 17:29:23.483673 [TestPathKeyProperties] PathKey("İ") = "fe5485821dcb806b" but PathKey("i") = "07ddadb875d7d685"
+# 
+v0.4.8#16784694188115201517
+0x0
+0x0
+0x0
+0xc05c654ab866b
+0x11
+0x0
+0x0

@@ -5,8 +5,12 @@ working SSD for editing, and back everything up to two archive disks, with
 every copy verified by MD5 hash.
 
 Status: build order step 1 (spike) done; step 2, archive-sync, is written
-(`windows/`, Go) and unit-tested on macOS but not yet run on Windows. Next
-steps are in the build order in `docs/design.md`.
+(`windows/`, Go) and unit-tested on macOS but not yet run on Windows (its
+partial-copy detection waits on those results). Step 3 is under way: rules
+tests (`firestore/tests/`), shared catalog rules with golden vectors
+(`windows/internal/catalog`, `testdata/vectors.json`) and archive-hasher's
+decision core (`windows/internal/hasher`); the walk, hashing, publishing and
+the command are next. Build order in `docs/design.md`.
 
 ## Docs
 

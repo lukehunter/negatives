@@ -117,6 +117,8 @@ The rules live in [`firestore/firestore.rules`](../firestore/firestore.rules). T
 - restrict the owner's writes to the table above, validating field names, types, `schema == 1`, `loc` values and path shape, and keeping `loc` and `path` unchanged on update;
 - deny everything else, including any collection not listed.
 
+The rules check path shape only loosely (no `..`, no leading or trailing `/`, no `: * ? " < > |`, at most 1024 characters); the tools apply the full path rules above before writing. Keep it that way: the rules must never be stricter than the tools, because a queued offline write that the rules reject is dropped without any error reaching the tool (found in the [Firestore spike](../spikes/firestore-offline/README.md#findings)).
+
 Test them with the Firebase emulator and the rules unit-testing library before deploying: one passing and one failing case for each `allow`. The tests are in `firestore/tests/`; how to run them is in [docs/testing.md](testing.md#layers).
 
 ## Changing the schema

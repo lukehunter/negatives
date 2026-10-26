@@ -16,6 +16,8 @@ const example = `
 primary = 'P:\'
 backup = 'B:\'
 quarantine = 'B:\_quarantine'           # must be on the backup disk
+primary_id = "0f0e0d0c-0b0a-4908-8706-050403020100"
+backup_id = "1f1e1d1c-1b1a-4918-9716-151413121110"
 
 [gcp]
 project = "negatives-8c3e2"
@@ -32,12 +34,18 @@ smart_disks = ["auto"]                  # or explicit disk numbers
 dir = 'C:\ProgramData\negatives\logs'
 `
 
+const (
+	pid = "0f0e0d0c-0b0a-4908-8706-050403020100"
+	bid = "1f1e1d1c-1b1a-4918-9716-151413121110"
+)
+
 func TestParseExample(t *testing.T) {
 	w, err := Parse(example)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if w.Disks.Primary != `P:\` || w.Disks.Backup != `B:\` || w.Disks.Quarantine != `B:\_quarantine` {
+	if w.Disks.Primary != `P:\` || w.Disks.Backup != `B:\` || w.Disks.Quarantine != `B:\_quarantine` ||
+		w.Disks.PrimaryID != pid || w.Disks.BackupID != bid {
 		t.Errorf("disks %+v", w.Disks)
 	}
 	if w.Logs.Dir != `C:\ProgramData\negatives\logs` || w.Scrub.BudgetMinutes != 45 || w.Schedule.Nightly != "03:00" {
@@ -122,6 +130,7 @@ func TestValidateDisks(t *testing.T) {
 	good := func() Windows {
 		w := Defaults()
 		w.Disks.Primary, w.Disks.Backup, w.Disks.Quarantine = abs("/p"), abs("/b"), abs("/b/_quarantine")
+		w.Disks.PrimaryID, w.Disks.BackupID = pid, bid
 		w.Logs.Dir = abs("/logs")
 		return w
 	}
@@ -147,6 +156,9 @@ func TestValidateDisks(t *testing.T) {
 		"quarantine is a file":     func(w *Windows) { w.Disks.Quarantine = abs("/b/qfile") },
 		"logs on primary":          func(w *Windows) { w.Logs.Dir = abs("/p/logs") },
 		"logs on backup":           func(w *Windows) { w.Logs.Dir = abs("/b/logs") },
+		"no primary ID":            func(w *Windows) { w.Disks.PrimaryID = "" },
+		"bad backup ID":            func(w *Windows) { w.Disks.BackupID = "B" },
+		"same IDs":                 func(w *Windows) { w.Disks.BackupID = w.Disks.PrimaryID },
 	}
 	for name, mod := range bad {
 		w := good()
@@ -165,6 +177,7 @@ func TestValidateDisksRealVolumes(t *testing.T) {
 	os.Mkdir(b, 0o755)
 	w := Defaults()
 	w.Disks.Primary, w.Disks.Backup, w.Disks.Quarantine = p, b, filepath.Join(b, "_quarantine")
+	w.Disks.PrimaryID, w.Disks.BackupID = pid, bid
 	w.Logs.Dir = filepath.Join(dir, "logs")
 	err := w.ValidateDisks(OSEnv())
 	if err == nil || !strings.Contains(err.Error(), "same volume") {

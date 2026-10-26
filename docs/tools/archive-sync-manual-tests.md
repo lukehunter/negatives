@@ -10,9 +10,10 @@ Checks for [archive-sync](archive-sync.md) that need Windows and robocopy. They 
 
    ```bash
    GOOS=windows GOARCH=amd64 go build -o archive-sync.exe ./cmd/archive-sync
+   GOOS=windows GOARCH=amd64 go build -o disk-id.exe ./cmd/disk-id
    ```
 
-   Copy `archive-sync.exe` to `C:\negatives-test\` on the Windows machine. To run the automated robocopy tests (section A) the Windows machine also needs Go and a copy of the repo.
+   Copy `archive-sync.exe` and `disk-id.exe` to `C:\negatives-test\` on the Windows machine. To run the automated robocopy tests (section A) the Windows machine also needs Go and a copy of the repo.
 
 2. **Make two test disks** as virtual disks, so they're separate volumes like the real ones. In an administrator prompt run `diskpart`, then:
 
@@ -31,13 +32,25 @@ Checks for [archive-sync](archive-sync.md) that need Windows and robocopy. They 
 
    For realistic speeds in section C, put the `.vhdx` files on a spinning disk that isn't an archive disk, or use a spare USB disk instead.
 
-3. **Test config** at `C:\negatives-test\config.toml`:
+3. **Give the test disks identities:**
+
+   ```text
+   disk-id create --role primary T:\
+   disk-id create --role backup U:\
+   ```
+
+   - [ ] Each prints the ID to put in the config, and `T:\.negatives-disk` and `U:\.negatives-disk` exist.
+   - [ ] Running `disk-id create --role backup T:\` now refuses ("already exists") and leaves `T:\.negatives-disk` unchanged.
+
+   **Test config** at `C:\negatives-test\config.toml`, with the two IDs printed above:
 
    ```toml
    [disks]
    primary = 'T:\'
    backup = 'U:\'
    quarantine = 'U:\_quarantine'
+   primary_id = "<ID printed for T:>"
+   backup_id = "<ID printed for U:>"
 
    [logs]
    dir = 'C:\negatives-test\logs'
@@ -154,12 +167,16 @@ Use a real, long video clip (the larger the better, at least 20 GB, for example 
 
 ## E. Lock
 
-- [ ] Start a long run, then start a second one in another window: the second prints "another archive-sync run is in progress" and exits 1 at once.
+- [ ] Start a long run, then start a second one in another window: the second prints "another archive-sync run is in progress", writes the same line to the day's log, and exits **0** at once (an overlap isn't a failure).
 - [ ] Kill the first with `taskkill /F`: the next run starts normally (no stale lock).
 
 ## F. Refusals
 
-Each must stop with a clear message, exit 1, and change nothing:
+Each must stop with a clear message, exit 1, and change nothing. Each message must also be in a log file: in `C:\negatives-test\logs\archive-sync-<date>.log`, except config errors, which go to `C:\ProgramData\negatives\logs\archive-sync-<date>.log`.
+
+- [ ] **Swapped drive letters**, in sync and in `--report` mode. In `diskpart`, `list volume` to find the numbers of TESTPRIMARY and TESTBACKUP, then `select volume <TESTPRIMARY>`, `remove letter=T`, `select volume <TESTBACKUP>`, `remove letter=U`, `assign letter=T`, `select volume <TESTPRIMARY>`, `assign letter=U`. The message says `T:\` is the backup disk and asks whether letters were swapped. Swap them back afterwards.
+- [ ] **A different disk:** set `backup_id` to the primary's ID, or to any other ID: refused as a different or replaced disk.
+- [ ] **No identity file:** rename `U:\.negatives-disk` to `x`: refused, and archive-sync doesn't create a new one. Rename it back.
 
 - [ ] `backup = 'T:\'` (same disk as primary).
 - [ ] `quarantine = 'T:\_quarantine'` (not on the backup disk), and `quarantine = 'U:\x\_quarantine'` (not at the root).
@@ -183,4 +200,5 @@ Only `--report` touches the real disks, and it writes nothing to them.
 | | | C3: partial size and time, per variant (a) to (d) | |
 | | | C2(b): exit code after robocopy was killed | |
 | | | C2(c): robocopy kept running after archive-sync was killed? | |
+| | | F: swapped letters refused in both modes | |
 | | | G: report duration, number of differences | |

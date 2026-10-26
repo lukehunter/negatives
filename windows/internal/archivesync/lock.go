@@ -16,7 +16,8 @@ var ErrLocked = errors.New("another archive-sync run is in progress")
 type Lock struct{ f *os.File }
 
 // AcquireLock takes the lock at path, or returns ErrLocked at once if
-// another process holds it.
+// another process holds it. Any other error (the lock file can't be opened
+// or locked for another reason) is returned as it is.
 func AcquireLock(path string) (*Lock, error) {
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0o644)
 	if err != nil {
@@ -24,7 +25,10 @@ func AcquireLock(path string) (*Lock, error) {
 	}
 	if err := lockFile(f); err != nil {
 		f.Close()
-		return nil, fmt.Errorf("%w (lock %s)", ErrLocked, path)
+		if heldElsewhere(err) {
+			return nil, fmt.Errorf("%w (lock %s)", ErrLocked, path)
+		}
+		return nil, fmt.Errorf("locking %s: %w", path, err)
 	}
 	// For a person looking at the file; the lock itself is what counts.
 	_ = f.Truncate(0)

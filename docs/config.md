@@ -53,6 +53,8 @@ paths_differ = true                     # ssd-push: SSD paths no longer match th
 primary = 'P:\'
 backup = 'B:\'
 quarantine = 'B:\_quarantine'           # directly at the backup disk's root; this is the default
+primary_id = "…"                        # from P:\.negatives-disk (disk-id show P:\)
+backup_id = "…"                         # from B:\.negatives-disk
 
 [gcp]
 project = "negatives-8c3e2"
@@ -103,5 +105,5 @@ Hand-editing the TOML file is always fine too; every tool validates it on start.
 Every tool checks its configuration on start and refuses to run, with a clear message, if something is wrong:
 
 - **Mac:** the `Shoots` folder exists and is on an APFS volume; the share path is a mounted network volume (when a tool needs it); the Firebase config file exists.
-- **Windows:** primary and backup are different volumes, both exist, and neither is inside the other; the quarantine folder sits directly at the backup disk's root and isn't a file; the logs folder is on neither archive disk; the key file exists and is readable only by the account running the task (checked by the tools that use it, not archive-sync); the nightly time parses. Unknown keys are an error, so a misspelling can't fall back to a default silently.
+- **Windows:** primary and backup are different volumes, both exist, and neither is inside the other; both disk IDs are set, and at the start of every run each disk's `.negatives-disk` identity file must have the right role and the configured ID (see [archive-sync](tools/archive-sync.md#disk-identity)); the quarantine folder sits directly at the backup disk's root and isn't a file; the logs folder is on neither archive disk; the key file exists and is readable only by the account running the task (checked by the tools that use it, not archive-sync); the nightly time parses. Unknown keys are an error, so a misspelling can't fall back to a default silently.
 - **Shared:** numbers are positive and in a sensible range; exclude patterns parse and never match `.originals/`, which must always be pushed.

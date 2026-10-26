@@ -10,6 +10,8 @@ package archivesync
 import (
 	"path"
 	"strings"
+
+	"github.com/lukehunter/negatives/windows/internal/diskid"
 )
 
 // Names fixed by the folder layout in docs/design.md.
@@ -99,14 +101,18 @@ func IsPartial(name string) bool {
 }
 
 // SkipTop reports whether a top-level entry is never copied or compared:
-// Windows system folders, and the quarantine folder's name (which lives at
-// the backup root and must never be a copy destination).
+// Windows system folders, each disk's own identity file, and the
+// quarantine folder's name (which lives at the backup root and must never
+// be a copy destination).
 func SkipTop(name, quarantineName string) bool {
 	f := Fold(name)
 	for _, s := range systemDirs {
 		if f == Fold(s) {
 			return true
 		}
+	}
+	if f == Fold(diskid.FileName) {
+		return true
 	}
 	return quarantineName != "" && f == Fold(quarantineName)
 }

@@ -30,7 +30,7 @@ func TestPlanExample(t *testing.T) {
 	coast := filepath.Join(p, "2026-10-18 Coast")
 	want := []Job{
 		{Pass: 1, Src: p, Dst: b, Args: []string{p, b, "/XC", "/XN", "/XO", "/DCOPY:T",
-			"/R:2", "/W:5", "/XJ", "/NP", "/NDL", "/NJH", "/NJS", "/FP", "/XF", "*.partial", "/UNILOG+:/logs/r.log"}},
+			"/R:2", "/W:5", "/XJ", "/NP", "/NDL", "/NJH", "/NJS", "/FP", "/XF", "*.partial", ".negatives-disk", "/UNILOG+:/logs/r.log"}},
 		{Pass: 1, Rel: "2019-05-04 Beach", Src: filepath.Join(p, "2019-05-04 Beach"), Dst: filepath.Join(b, "2019-05-04 Beach"),
 			Args: []string{filepath.Join(p, "2019-05-04 Beach"), filepath.Join(b, "2019-05-04 Beach"), "/E", "/XC", "/XN", "/XO",
 				"/R:2", "/W:5", "/XJ", "/NP", "/NDL", "/NJH", "/NJS", "/FP", "/XF", "*.partial", "/UNILOG+:/logs/r.log"}},
@@ -54,7 +54,7 @@ func TestPlanExample(t *testing.T) {
 }
 
 func genEntries(t *rapid.T) []RootEntry {
-	special := []string{"$RECYCLE.BIN", "System Volume Information", "_quarantine", "x.partial", "Derived", "Originals"}
+	special := []string{"$RECYCLE.BIN", "System Volume Information", "_quarantine", "x.partial", "Derived", "Originals", ".negatives-disk"}
 	n := rapid.IntRange(0, 12).Draw(t, "n")
 	seen := map[string]bool{}
 	var out []RootEntry

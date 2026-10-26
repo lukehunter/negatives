@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+
+	"github.com/lukehunter/negatives/windows/internal/diskid"
 )
 
 // DefaultPath is where the Windows tools look for their config file.
@@ -23,6 +25,9 @@ type Windows struct {
 		Primary    string `toml:"primary"`
 		Backup     string `toml:"backup"`
 		Quarantine string `toml:"quarantine"`
+		// IDs from each disk's .negatives-disk identity file.
+		PrimaryID string `toml:"primary_id"`
+		BackupID  string `toml:"backup_id"`
 	} `toml:"disks"`
 	GCP struct {
 		Project string `toml:"project"`
@@ -120,11 +125,25 @@ func OSEnv() Env { return Env{Stat: os.Stat, VolumeID: volumeID} }
 //   - quarantine is a folder directly at the backup disk's root (it may not
 //     exist yet), on the backup volume;
 //   - the logs folder is on neither archive disk, so robocopy's log can
-//     never be copied to the backup or written to the primary.
+//     never be copied to the backup or written to the primary;
+//   - both disk IDs are set. That each disk's identity file matches is
+//     checked at the start of every run (diskid.Check).
 func (w Windows) ValidateDisks(env Env) error {
 	p, b, q := w.Disks.Primary, w.Disks.Backup, w.Disks.Quarantine
 	if p == "" || b == "" {
 		return errors.New("disks.primary and disks.backup must both be set")
+	}
+	for _, d := range []struct{ key, id, root, role string }{
+		{"disks.primary_id", w.Disks.PrimaryID, p, diskid.Primary},
+		{"disks.backup_id", w.Disks.BackupID, b, diskid.Backup},
+	} {
+		if !diskid.ValidID(d.id) {
+			return fmt.Errorf("%s %q is not a disk ID: run disk-id show %s (or, the first time, disk-id create --role %s %s) and copy the ID it prints",
+				d.key, d.id, d.root, d.role, d.root)
+		}
+	}
+	if w.Disks.PrimaryID == w.Disks.BackupID {
+		return errors.New("disks.primary_id and disks.backup_id are the same")
 	}
 	for _, d := range []struct{ key, path string }{{"disks.primary", p}, {"disks.backup", b}, {"disks.quarantine", q}} {
 		if !filepath.IsAbs(d.path) {

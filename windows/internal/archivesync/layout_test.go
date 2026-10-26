@@ -43,6 +43,7 @@ func TestSkipTop(t *testing.T) {
 	for name, want := range map[string]bool{
 		"$RECYCLE.BIN": true, "$Recycle.Bin": true, "System Volume Information": true,
 		"_quarantine": true, "_QUARANTINE": true, "2026-10-18 Coast": false, "_quarantined": false,
+		".negatives-disk": true, ".NEGATIVES-DISK": true, ".negatives": false,
 	} {
 		if got := SkipTop(name, "_quarantine"); got != want {
 			t.Errorf("SkipTop(%q) = %v, want %v", name, got, want)

@@ -10,13 +10,18 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/lukehunter/negatives/windows/internal/diskid"
 )
 
 // Options configures one run.
 type Options struct {
 	Primary, Backup string // disk roots
-	Quarantine      string // folder directly at the backup root
-	LogDir          string
+	// The IDs each disk's identity file must carry (config
+	// disks.primary_id and disks.backup_id).
+	PrimaryID, BackupID string
+	Quarantine          string // folder directly at the backup root
+	LogDir              string
 	// Report: compare and list only. Nothing on either disk is written,
 	// moved or copied.
 	Report bool
@@ -97,17 +102,18 @@ func Run(ctx context.Context, o Options) (*Result, error) {
 	res := &Result{RunID: now.UTC().Format("20060102T150405Z"), Counts: map[Verdict]int{}}
 	day := now.Format("2006-01-02")
 
-	if err := os.MkdirAll(o.LogDir, 0o755); err != nil {
-		return nil, err
-	}
-	lf, err := os.OpenFile(filepath.Join(o.LogDir, "archive-sync-"+day+".log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	lf, err := openDayLog(o.LogDir, now)
 	if err != nil {
 		return nil, err
 	}
 	defer lf.Close()
 	out := io.MultiWriter(lf, o.Out)
-	logf := func(format string, a ...any) {
-		fmt.Fprintf(out, "%s %s\n", time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf(format, a...))
+	logf := func(format string, a ...any) { writeLine(out, fmt.Sprintf(format, a...)) }
+	// An error that stops the run before it starts, logged as well as
+	// returned, since nobody sees a scheduled task's console.
+	abort := func(err error) (*Result, error) {
+		logf("ERROR %v", err)
+		return nil, err
 	}
 	fail := func(format string, a ...any) {
 		msg := fmt.Sprintf(format, a...)
@@ -120,14 +126,23 @@ func Run(ctx context.Context, o Options) (*Result, error) {
 	}
 	logf("archive-sync %s: %s -> %s, %s", res.RunID, o.Primary, o.Backup, mode)
 
+	// The disks must be the ones the config names, in the right roles,
+	// before anything is read or written: with swapped drive letters the
+	// backup would be copied onto the primary.
+	if err := diskid.Check(o.Primary, diskid.Primary, o.PrimaryID); err != nil {
+		return abort(err)
+	}
+	if err := diskid.Check(o.Backup, diskid.Backup, o.BackupID); err != nil {
+		return abort(err)
+	}
 	qname := filepath.Base(o.Quarantine)
 	if _, err := os.Lstat(filepath.Join(o.Primary, qname)); err == nil {
-		return nil, fmt.Errorf("the primary disk has %s, the quarantine folder's name: rename one of them so it can't be copied into quarantine",
-			filepath.Join(o.Primary, qname))
+		return abort(fmt.Errorf("the primary disk has %s, the quarantine folder's name: rename one of them so it can't be copied into quarantine",
+			filepath.Join(o.Primary, qname)))
 	}
 	entries, err := ListRoot(o.Primary)
 	if err != nil {
-		return nil, fmt.Errorf("listing the primary disk: %w", err)
+		return abort(fmt.Errorf("listing the primary disk: %w", err))
 	}
 	shoots := ShootsOf(entries)
 	logf("primary: %d top-level entries, %d negatives shoots", len(entries), len(shoots))
@@ -200,6 +215,38 @@ func Run(ctx context.Context, o Options) (*Result, error) {
 	}
 	logf("%s", Summary(res))
 	return res, nil
+}
+
+// LogError appends an error to the day's log in dir, for errors that
+// happen before Run: a bad config or a lock that can't be taken.
+func LogError(dir string, now time.Time, msg string) error {
+	f, err := openDayLog(dir, now)
+	if err != nil {
+		return err
+	}
+	writeLine(f, "ERROR "+msg)
+	return f.Close()
+}
+
+// LogInfo appends a line to the day's log in dir.
+func LogInfo(dir string, now time.Time, msg string) error {
+	f, err := openDayLog(dir, now)
+	if err != nil {
+		return err
+	}
+	writeLine(f, msg)
+	return f.Close()
+}
+
+func openDayLog(dir string, now time.Time) (*os.File, error) {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return nil, err
+	}
+	return os.OpenFile(filepath.Join(dir, "archive-sync-"+now.Format("2006-01-02")+".log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+}
+
+func writeLine(w io.Writer, msg string) {
+	fmt.Fprintf(w, "%s %s\n", time.Now().Format("2006-01-02 15:04:05"), msg)
 }
 
 // quarantine moves one backup file into the quarantine folder, after

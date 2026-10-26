@@ -5,6 +5,7 @@ Go, single binary. Part of [negatives](../design.md). Shared concepts live in th
 - Walks both disks and hashes any file whose path, size or mtime isn't in its local state file, skipping in-progress .partial files. Hashing reads local disks only.
 - Skips zero-byte files entirely.
 - Skips the backup disk's quarantine folder: files there are set aside partial copies, never archive copies.
+- Skips each disk's identity file, `.negatives-disk`, at the root: it differs on each disk by design.
 - Maintains each hash's summary document (first verified time and copy count per disk, number of distinct shoots, the `common` flag) from its local state.
 - Publishes `primary` and `backup` facts to Firestore in batches of up to 500, using a service account key.
 - Saves progress after each batch, so an interrupted run resumes instead of starting over.

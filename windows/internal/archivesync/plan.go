@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/lukehunter/negatives/windows/internal/diskid"
 )
 
 // RootEntry is one top-level entry on the primary disk.
@@ -62,10 +64,11 @@ func Plan(in PlanInput) []Job {
 	}
 	if rootFiles {
 		// No /E: only the files directly at the root. /DCOPY:T copies the
-		// root's timestamps but not its hidden and system attributes.
+		// root's timestamps but not its hidden and system attributes. Each
+		// disk keeps its own identity file.
 		args := []string{in.Primary, in.Backup, "/XC", "/XN", "/XO", "/DCOPY:T"}
 		jobs = append(jobs, Job{Pass: 1, Src: in.Primary, Dst: in.Backup,
-			Args: append(args, commonFlags(in)...)})
+			Args: append(args, commonFlags(in, diskid.FileName)...)})
 	}
 	for _, e := range entries {
 		if !e.IsDir || SkipTop(e.Name, in.QuarantineName) {
@@ -102,11 +105,13 @@ func Plan(in PlanInput) []Job {
 //	/R:2 /W:5   retry a failed file twice, five seconds apart
 //	/XJ         never follow junctions, which could lead off the disk
 //	/NP /NDL /NJH /NJS /FP   log only files copied and errors, with full paths
-//	/XF *.partial            skip ssd-push's in-progress temporary files
+//	/XF *.partial            skip ssd-push's in-progress temporary files,
+//	                         plus any other names given
 //	/L          report mode: list what would be copied, copy nothing
 //	/UNILOG+:   append to the log as Unicode, so any file name logs correctly
-func commonFlags(in PlanInput) []string {
+func commonFlags(in PlanInput, excludeFiles ...string) []string {
 	f := []string{"/R:2", "/W:5", "/XJ", "/NP", "/NDL", "/NJH", "/NJS", "/FP", "/XF", "*" + PartialSuffix}
+	f = append(f, excludeFiles...)
 	if in.Report {
 		f = append(f, "/L")
 	}

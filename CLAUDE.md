@@ -88,7 +88,9 @@ steps are in the build order in `docs/design.md`.
 - archive-sync is Go driving robocopy (one job per top-level folder), not
   PowerShell. Reconcile quarantines a backup file only when it's smaller than
   primary and archive-hasher's facts say the primary is verified and unchanged;
-  until step 3 it only reports partial copies.
+  until step 3 it only reports partial copies. Each archive disk has a
+  `.negatives-disk` identity file (role + ID, made by `disk-id create`), and
+  archive-sync refuses to run unless both match the config.
 - Windows runs are triggered by writes (watcher, 10 quiet minutes), plus a
   nightly safety-net run. Avoid spinning disks unnecessarily.
 - Nothing frees SSD space automatically: ssd-evict is user-run, works on

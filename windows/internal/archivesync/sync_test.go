@@ -9,10 +9,13 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/lukehunter/negatives/windows/internal/diskid"
 )
 
 type disks struct {
 	primary, backup, quarantine, logs string
+	primaryID, backupID               string
 }
 
 func newDisks(t *testing.T) disks {
@@ -26,6 +29,15 @@ func newDisks(t *testing.T) disks {
 			t.Fatal(err)
 		}
 	}
+	pid, err := diskid.Create(d.primary, diskid.Primary, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	bid, err := diskid.Create(d.backup, diskid.Backup, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.primaryID, d.backupID = pid.ID, bid.ID
 	return d
 }
 
@@ -33,6 +45,7 @@ func (d disks) options(r Runner, f FactSource, report bool) Options {
 	clock := time.Date(2026, 10, 25, 3, 0, 0, 0, time.UTC)
 	return Options{
 		Primary: d.primary, Backup: d.backup, Quarantine: d.quarantine, LogDir: d.logs,
+		PrimaryID: d.primaryID, BackupID: d.backupID,
 		Report: report, Facts: f, Runner: r,
 		Now: func() time.Time { clock = clock.Add(time.Second); return clock },
 	}
@@ -344,5 +357,63 @@ func TestRunStopped(t *testing.T) {
 	}
 	if res.OK() || len(r.calls) != 0 {
 		t.Fatalf("ok %v, calls %d", res.OK(), len(r.calls))
+	}
+}
+
+// Drive letters swapped, a disk replaced, or an identity file missing: the
+// run stops before reading or writing anything, in both modes.
+func TestRunRefusesWrongDisks(t *testing.T) {
+	for name, mod := range map[string]func(*Options, disks){
+		"swapped": func(o *Options, d disks) {
+			o.Primary, o.Backup, o.Quarantine = d.backup, d.primary, filepath.Join(d.primary, "_quarantine")
+		},
+		"swapped IDs too": func(o *Options, d disks) {
+			o.Primary, o.Backup, o.Quarantine = d.backup, d.primary, filepath.Join(d.primary, "_quarantine")
+			o.PrimaryID, o.BackupID = d.backupID, d.primaryID
+		},
+		"replaced backup": func(o *Options, _ disks) { o.BackupID = "0f0e0d0c-0b0a-4908-8706-050403020100" },
+		"no primary ID":   func(o *Options, _ disks) { o.PrimaryID = "" },
+		"no identity file": func(_ *Options, d disks) {
+			os.Remove(filepath.Join(d.primary, diskid.FileName))
+		},
+	} {
+		for _, report := range []bool{false, true} {
+			d := newDisks(t)
+			fillPrimary(t, d)
+			put(t, d.backup, coast+"/Originals/a7rv-01/PRIVATE/M4ROOT/CLIP/C0001.MP4", "v", 0)
+			o := d.options(&fakeRobocopy{}, &hasherFacts{primary: d.primary}, report)
+			mod(&o, d)
+			pBefore, bBefore := snapshot(t, d.primary), snapshot(t, d.backup)
+			if _, err := Run(context.Background(), o); err == nil {
+				t.Fatalf("%s, report %v: ran", name, report)
+			}
+			if r := o.Runner.(*fakeRobocopy); len(r.calls) != 0 {
+				t.Fatalf("%s: robocopy ran", name)
+			}
+			sameSnapshot(t, name+": primary", pBefore, snapshot(t, d.primary))
+			sameSnapshot(t, name+": backup", bBefore, snapshot(t, d.backup))
+			log, _ := os.ReadFile(filepath.Join(d.logs, "archive-sync-2026-10-25.log"))
+			if !strings.Contains(string(log), "ERROR") {
+				t.Errorf("%s: refusal not logged: %q", name, log)
+			}
+		}
+	}
+}
+
+// Each disk keeps its own identity file: it's never copied or compared.
+func TestRunLeavesIdentityFilesAlone(t *testing.T) {
+	d := newDisks(t)
+	fillPrimary(t, d)
+	res, err := Run(context.Background(), d.options(&fakeRobocopy{}, NoFacts{}, false))
+	if err != nil || !res.OK() {
+		t.Fatalf("%v %s", err, Summary(res))
+	}
+	if id, err := diskid.Read(d.backup); err != nil || id.Role != diskid.Backup || id.ID != d.backupID {
+		t.Fatalf("backup identity now %+v, %v", id, err)
+	}
+	for _, f := range res.Found {
+		if f.Rel == diskid.FileName {
+			t.Fatalf("identity file compared: %+v", f)
+		}
 	}
 }
